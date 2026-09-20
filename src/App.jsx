@@ -10,8 +10,10 @@ import Contact from './pages/Contact.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 export default function App() {
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
+
   return (
-    <BrowserRouter basename="/Success-Squad---EDC-/">
+    <BrowserRouter basename={basename === '/' ? '' : basename}>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
