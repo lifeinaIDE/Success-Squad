@@ -11,7 +11,7 @@ npm install
 npm run dev
 `
 
-Dev server: http://localhost:5173/Success-Squad---EDC-/
+Dev server: http://localhost:5173/Success-Squad/
 
 ## Build for Production
 
