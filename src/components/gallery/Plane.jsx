@@ -42,9 +42,11 @@ export default function Plane({
   const GAP_X  = isMobile ? 180 : 250
   const GAP_Y  = isMobile ? 200 : 270
 
-  // Diagonal ascending layout: each column shifts up by 40% of a row gap
-  const baseX = col * GAP_X - (isMobile ? 50 : 80)
-  const baseY = row * GAP_Y + col * (GAP_Y * 0.4) - (isMobile ? 60 : 100)
+  // Diagonal ascending layout centered around (0,0)
+  // COLS = 4 (indices 0,1,2,3 -> center is 1.5)
+  // ROWS = 5 (indices 0,1,2,3,4 -> center is 2)
+  const baseX = (col - 1.5) * GAP_X
+  const baseY = (row - 2) * GAP_Y + (col - 1.5) * (GAP_Y * 0.4)
 
   // Scattered per-plane base rotations for the stacked-card look
   const baseRotate  = ((index % 7) - 3) * 2.5   // –7.5° to +7.5°
@@ -121,6 +123,11 @@ export default function Plane({
       style={{
         width: CARD_W,
         height: CARD_H,
+        // Center the card exactly in the middle before x/y transforms
+        left: '50%',
+        top: '50%',
+        marginLeft: -CARD_W / 2,
+        marginTop: -CARD_H / 2,
         x: baseX,
         // composedY = baseY + velocity drift (MotionValue)
         y: composedY,

@@ -1559,15 +1559,13 @@ a, button, .nav-link, .btn {
 
 /* ---- MEMORIES SECTION (OurMemories — Motion 3D scroll-velocity planes) ---- */
 
-/* Outer section shell: full-width, fixed min-height, no scroll clip */
+/* Outer section shell: full-width, tall enough to show the whole grid */
 .memories-section {
   position: relative;
   width: 100%;
-  min-height: 820px;
+  min-height: 1800px;
   background: var(--bg);
   overflow: hidden;
-  /* Extra bottom padding so the tallest column of planes isn't clipped */
-  padding-bottom: 80px;
 }
 
 /* Heading — absolutely pinned top-left, above the planes */
@@ -1600,11 +1598,10 @@ a, button, .nav-link, .btn {
 .memories-viewport {
   /* perspective: 1400px creates the depth illusion */
   perspective: 1400px;
-  perspective-origin: 50% 30%;
+  perspective-origin: 50% 50%;
   width: 100%;
-  height: 700px;
-  /* Push the viewport below the heading */
-  margin-top: 80px;
+  height: 100%;
+  margin-top: 0;
   overflow: visible;
 }
 
@@ -1698,11 +1695,11 @@ a, button, .nav-link, .btn {
   .memories-viewport {
     /* Reduce perspective depth on mobile to protect GPU */
     perspective: 800px;
-    height: 500px;
-    margin-top: 60px;
+    height: 100%;
+    margin-top: 0;
   }
   .memories-section {
-    min-height: 620px;
+    min-height: 1300px;
   }
   .memories-heading h2 {
     font-size: 2.5rem;
