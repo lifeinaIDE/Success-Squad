@@ -9,7 +9,7 @@ import { useEffect, useRef } from 'react'
  * MemoriesSection — "Our Memories" diagonal cascade.
  * Scroll drift + hover lift match the original memories.js behavior.
  */
-function MemoriesSection() {
+function MemoriesSection({ onPhotoClick }) {
   const sectionRef = useRef(null)
   const stackRef = useRef(null)
   const N = memoriesImages.length
@@ -81,7 +81,7 @@ function MemoriesSection() {
 
       <div className="memories-stack" ref={stackRef}>
         {memoriesImages.map(({ id, src, alt }, i) => (
-          <div key={id} className="memories-card">
+          <div key={id} className="memories-card" onClick={() => onPhotoClick(i)}>
             <span className="memories-card-index">{String(i).padStart(2, '0')}</span>
             <img src={src} alt={alt} loading="lazy" />
           </div>
@@ -113,7 +113,7 @@ export default function Gallery() {
       ))}
 
       {/* Our Memories diagonal cascade */}
-      <MemoriesSection />
+      <MemoriesSection onPhotoClick={lb.open} />
 
       {/* Lightbox (for any photo clicked in memories) */}
       <Lightbox
