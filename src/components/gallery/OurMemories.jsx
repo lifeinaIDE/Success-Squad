@@ -49,9 +49,7 @@ const ROWS          = 5
 const TOTAL_PLANES  = COLS * ROWS   // 20 plane slots
 const SPRING_CONFIG = { stiffness: 350, damping: 35, mass: 0.5 }
 
-// wrap(0, 8) cycles the 8 source images across 20 slots via safe modulo.
-// Called at module level — wrap() itself is a pure function, not a hook.
-const wrapIndex = wrap(0, memoriesData.length)
+// wrap() cycles the 8 source images across 20 slots via safe modulo.
 
 export default function OurMemories() {
   const prefersReducedMotion = useReducedMotion()
@@ -105,11 +103,11 @@ export default function OurMemories() {
 
   // ── BUILD PLANE GRID ──────────────────────────────────────────────────────
   // 4 cols × 5 rows = 20 plane slots.
-  // wrapIndex(i) cycles the 8 source images across all 20 slots.
+  // wrap(0, N, i) cycles the 8 source images across all 20 slots.
   const planes = Array.from({ length: TOTAL_PLANES }, (_, i) => {
     const col     = i % COLS
     const row     = Math.floor(i / COLS)
-    const dataIdx = wrapIndex(i)           // 0–7 cycled via wrap
+    const dataIdx = wrap(0, memoriesData.length, i)           // 0–7 cycled via wrap
     return { index: i, col, row, ...memoriesData[dataIdx] }
   })
 
