@@ -1559,61 +1559,59 @@ a, button, .nav-link, .btn {
 
 /* ---- MEMORIES SECTION (OurMemories — Motion 3D scroll-velocity planes) ---- */
 
-/* Outer section shell: full-width, tall enough to show the whole grid */
+/* Outer section shell: tall enough to act as a scroll track */
 .memories-section {
   position: relative;
   width: 100%;
-  min-height: 1800px;
+  height: 400vh;
   background: var(--bg);
-  overflow: hidden;
-}
-
-/* Heading — absolutely pinned top-left, above the planes */
-.memories-heading {
-  position: absolute;
-  top: 40px;
-  left: clamp(24px, 5vw, 60px);
-  z-index: 100;
-  pointer-events: none;
-}
-
-.memories-heading h2 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  line-height: 1.05;
-  color: var(--text);
-  margin: 0;
-}
-
-.memories-badge {
-  color: var(--text-muted);
-  font-family: var(--font-body);
-  font-size: 1.1rem;
-  vertical-align: super;
 }
 
 /* ── 3D VIEWPORT — CSS sets the perspective ───────────────────────────────── */
 /* Motion handles all per-plane transforms (x, y, z, rotateY, rotate) inline. */
 .memories-viewport {
+  position: sticky;
+  top: 0;
   /* perspective: 1400px creates the depth illusion */
   perspective: 1400px;
   perspective-origin: 50% 50%;
   width: 100%;
-  height: 100%;
-  margin-top: 0;
-  overflow: visible;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* Track: preserve-3d allows children's Z/rotateY to render in true 3D space */
+/* Heading — absolutely pinned top-left, massive text */
+.memories-heading {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  z-index: 10;
+  pointer-events: none;
+}
+.memories-heading h2 {
+  font-size: 5rem;
+  line-height: 0.9;
+  margin: 0;
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.memories-badge {
+  font-size: 1.5rem;
+  font-weight: 500;
+  vertical-align: super;
+  color: var(--text-dim);
+}
+
+/* The inner track that actually groups the planes */
 .memories-track {
   position: relative;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  /* Center the plane group horizontally in the viewport */
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
 }
 
@@ -1622,39 +1620,24 @@ a, button, .nav-link, .btn {
 /* CSS sets only static structural properties.                                 */
 .memories-plane {
   position: absolute;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  /* Removed overflow: hidden so badge can float outside */
   background: var(--bg-card);
-  overflow: hidden;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
   cursor: pointer;
-  /* transform-style must propagate for 3D children */
   transform-style: preserve-3d;
-  /* Smooth border-color on fast-scroll dimming */
-  transition: border-color 0.3s ease;
-  /* Ensure the plane sits in the 3D layer stack */
   will-change: transform;
-}
-
-/* During fast scroll, dim the border so the ripple feels faster visually */
-.memories-fast .memories-plane {
-  border-color: rgba(255, 255, 255, 0.03);
 }
 
 /* ── INDEX BADGE ─────────────────────────────────────────────────────────── */
 .memories-index {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: -24px;
+  left: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.75rem;
-  color: var(--accent);
-  background: rgba(0, 0, 0, 0.65);
-  padding: 3px 9px;
-  border-radius: 20px;
+  font-size: 1rem;
+  color: var(--text-light);
   z-index: 10;
-  /* Prevent the badge from inheriting 3D transform from parent */
   transform: translateZ(1px);
 }
 

@@ -1,120 +1,72 @@
 /**
- * Plane.jsx — Individual 3D plane card for OurMemories section.
+ * Plane.jsx — Individual 3D plane card for the scroll-linked diagonal stack.
  *
- * Physics mapping (each comment links the Motion API to its behavior):
- *  useTransform(smoothVelocity, ...)  → per-plane Z depth (phase-delayed ripple)
- *  useTransform(smoothVelocity, ...)  → per-plane Y drift (wave feel)
- *  useTransform(velocityDrift, ...)   → combines drift with base Y position
- *  AnimatePresence + motion.div       → caption animates in on hover, out on leave
- *  animate() imperative               → scramble-text character cycling on hover
+ * Position maps directly to the user's scroll progress:
+ *   - The stack is a continuous diagonal line in 3D space.
+ *   - `dist` = index - activeIndex
+ *   - Cards with dist > 0 are pushed back (negative Z), right (+X), and up (-Y).
+ *   - Cards with dist < 0 are pulled towards/past the camera (+Z).
  */
-import { useState, useCallback, useRef } from 'react'
-import {
-  motion,
-  useTransform,
-  AnimatePresence,
-  animate,
-  useReducedMotion,
-} from 'motion/react'
-
-const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+import { motion, useTransform, AnimatePresence, useReducedMotion } from 'motion/react'
+import { useState, useRef } from 'react'
 
 export default function Plane({
   index,
+  total,
   src,
   alt,
   caption,
-  col,
-  row,
-  smoothVelocity,
+  progress,
   isMobile,
+  prefersReducedMotion,
 }) {
   const [hovered, setHovered] = useState(false)
-  const captionRef = useRef(null)
-  const scrambleRef = useRef(null)
 
-  // useReducedMotion — when true, skip all velocity-driven motion
-  const prefersReducedMotion = useReducedMotion()
+  // ── SIZING ────────────────────────────────────────────────────────────────
+  const CARD_W = isMobile ? 240 : 420
+  const CARD_H = isMobile ? 320 : 540
 
-  // ── GRID GEOMETRY ─────────────────────────────────────────────────────────
-  const CARD_W = isMobile ? 160 : 220
-  const CARD_H = isMobile ? 210 : 290
-  const GAP_X  = isMobile ? 180 : 250
-  const GAP_Y  = isMobile ? 200 : 270
+  // ── MATH: CONTINUOUS INDEX ────────────────────────────────────────────────
+  // activeIndex ranges from 0 to (total - 1) based on scroll progress.
+  const activeIndex = useTransform(progress, (p) => p * (total - 1))
+  
+  // dist represents how far this card is from being the "active" front card.
+  // dist = 0: Active card (front)
+  // dist = 1: Next card in sequence (behind)
+  // dist = -1: Previous card (passed the camera)
+  const dist = useTransform(activeIndex, (a) => index - a)
 
-  // Diagonal ascending layout centered around (0,0)
-  // COLS = 4 (indices 0,1,2,3 -> center is 1.5)
-  // ROWS = 5 (indices 0,1,2,3,4 -> center is 2)
-  const baseX = (col - 1.5) * GAP_X
-  const baseY = (row - 2) * GAP_Y + (col - 1.5) * (GAP_Y * 0.4)
+  // ── 3D POSITIONING ALONG THE DIAGONAL ─────────────────────────────────────
+  // Base offset to anchor the active card (dist=0) near the bottom-left.
+  const BASE_X = isMobile ? -20 : -350
+  const BASE_Y = isMobile ? 80 : 180
 
-  // Scattered per-plane base rotations for the stacked-card look
-  const baseRotate  = ((index % 7) - 3) * 2.5   // –7.5° to +7.5°
-  const baseRotateY = ((index % 5) - 2) * 4      // –8°   to +8°
+  // Per-index spacing increments
+  const STEP_Z = isMobile ? 250 : 350  // Depth between cards
+  const STEP_X = isMobile ? 120 : 200  // Horizontal shift per card
+  const STEP_Y = isMobile ? -80 : -120 // Vertical shift per card (negative = up)
 
-  // ── PHASE-DELAYED VELOCITY INPUT RANGE ────────────────────────────────────
-  // Each plane shifts its velocity input range outward by (index * 2).
-  // Plane 0 responds first at ±1200 px/s. Plane 19 responds at ±1238 px/s.
-  // This tiny stagger makes the ripple PROPAGATE across the grid,
-  // not every card moving at the exact same moment.
-  const phaseShift = index * 2
-  const lo = -1200 - phaseShift
-  const hi =  1200 + phaseShift
-  const maxZ    = isMobile ? 50 : 100
-  const driftAmt = isMobile ? 15 : 30
+  // Calculate final absolute translations based on `dist`
+  const x = useTransform(dist, (d) => BASE_X + d * STEP_X)
+  const y = useTransform(dist, (d) => BASE_Y + d * STEP_Y)
+  
+  // Z depth: negative pushes back into the screen. 
+  // If prefersReducedMotion, we flat-stack them using scale instead? 
+  // We'll keep Z for structure, but skip if strictly requested.
+  const z = useTransform(dist, (d) => {
+    if (prefersReducedMotion) return 0
+    return -d * STEP_Z
+  })
 
-  // useTransform #1: velocity → translateZ (retreat into depth on fast scroll)
-  // Output is [0,0,0] when reduced motion is preferred → no-op
-  const velocityZ = useTransform(
-    smoothVelocity,
-    [lo, 0, hi],
-    prefersReducedMotion ? [0, 0, 0] : [-maxZ, 0, -maxZ],
+  // Opacity: 
+  // - fade in rapidly right before passing camera (dist = -0.5)
+  // - fully opaque at dist = 0
+  // - slowly fade out deep in the background (dist > 8)
+  const opacity = useTransform(
+    dist,
+    [-1.5, -0.5, 0, 6, 12],
+    [0, 1, 1, 0.8, 0]
   )
-
-  // useTransform #2: velocity → Y drift amount (raw drift, centred at 0)
-  const rawDrift = useTransform(
-    smoothVelocity,
-    [lo, 0, hi],
-    prefersReducedMotion ? [0, 0, 0] : [driftAmt, 0, -driftAmt],
-  )
-
-  // useTransform #3: adds the static baseY to the drift motion value
-  // so the final Y position = baseY + drift (both are numbers, output is MotionValue)
-  // This is called unconditionally at top level — respects Rules of Hooks.
-  const composedY = useTransform(rawDrift, (drift) => baseY + drift)
-
-  // ── SCRAMBLE-TEXT on hover ────────────────────────────────────────────────
-  // animate() drives a counter 0 → caption.length. onUpdate progressively
-  // replaces random characters with the correct final character — scramble effect.
-  const startScramble = useCallback(() => {
-    if (prefersReducedMotion || !captionRef.current) return
-    if (scrambleRef.current) scrambleRef.current.stop()
-
-    const target = caption
-    let chars = Array.from({ length: target.length }, () => ' ')
-
-    scrambleRef.current = animate(0, target.length, {
-      duration: 0.55,
-      ease: 'easeOut',
-      onUpdate(v) {
-        const resolved = Math.floor(v)
-        chars = chars.map((_, i) =>
-          i < resolved
-            ? target[i]  // finalized character
-            : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
-        )
-        if (captionRef.current) captionRef.current.textContent = chars.join('')
-      },
-      onComplete() {
-        if (captionRef.current) captionRef.current.textContent = target
-      },
-    })
-  }, [caption, prefersReducedMotion])
-
-  const stopScramble = useCallback(() => {
-    if (scrambleRef.current) { scrambleRef.current.stop(); scrambleRef.current = null }
-    if (captionRef.current) captionRef.current.textContent = caption
-  }, [caption])
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
@@ -123,59 +75,48 @@ export default function Plane({
       style={{
         width: CARD_W,
         height: CARD_H,
-        // Center the card exactly in the middle before x/y transforms
+        // Center origin at 0,0 for perfect 3D perspective
         left: '50%',
         top: '50%',
         marginLeft: -CARD_W / 2,
         marginTop: -CARD_H / 2,
-        x: baseX,
-        // composedY = baseY + velocity drift (MotionValue)
-        y: composedY,
-        // translateZ drives the Z-depth ripple effect
-        translateZ: velocityZ,
-        rotateY: baseRotateY,
-        rotate: baseRotate,
+        x,
+        y,
+        translateZ: z,
+        opacity,
       }}
-      // Entrance stagger: each plane fades/scales in with a delay proportional to index
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{
-        delay: prefersReducedMotion ? 0 : index * 0.04,
-        duration: prefersReducedMotion ? 0.01 : 0.55,
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      // Hover: straighten rotation, scale up (Z handled by translateZ in style)
-      whileHover={{
-        scale: 1.1,
-        rotateY: 0,
-        rotate: baseRotate * 0.2,
-        transition: { duration: 0.25, ease: 'easeOut' },
-      }}
-      onHoverStart={() => { setHovered(true);  startScramble() }}
-      onHoverEnd  ={() => { setHovered(false); stopScramble()  }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
     >
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-      />
-
+      {/* 
+        Index badge positioned slightly outside the image.
+        We removed overflow: hidden from the plane container in CSS
+        so this badge can float freely.
+      */}
       <span className="memories-index">
         {String(index).padStart(2, '0')}
       </span>
 
-      {/* AnimatePresence ensures the caption fully animates OUT before unmounting */}
+      {/* The Image */}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        className="memories-img"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+      />
+
+      {/* Caption — simple fade-in on hover */}
       <AnimatePresence>
         {hovered && (
           <motion.div
             className="memories-caption"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ duration: 0.2 }}
           >
-            <span ref={captionRef}>{caption}</span>
+            {caption}
           </motion.div>
         )}
       </AnimatePresence>
