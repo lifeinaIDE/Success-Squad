@@ -1,73 +1,74 @@
 /**
- * OurMemories.jsx — "Our Memories" 3D scroll-linked diagonal stack.
+ * OurMemories.jsx — "Our Memories" 3D diagonal stack section.
  *
- * Implements an infinite scroll effect where 16 image planes are positioned
- * in a diagonal 3D line. As the user scrolls through the 400vh section,
- * the active focus shifts along the stack, pulling the cards forward towards
- * the viewer and pushing them off-screen.
+ * Uses scroll velocity to slightly drift the cards, while keeping
+ * the section at a normal height (not sticky/scroll-hijacked).
  */
-import { useRef, useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  motion,
-  useScroll,
+  useMotionValue,
+  useVelocity,
   useSpring,
+  useMotionValueEvent,
   useReducedMotion,
   wrap,
 } from 'motion/react'
 import Plane from './Plane.jsx'
 import { memoriesData } from '../../data/memoriesData.js'
 
-const TOTAL_PLANES = 16 // Number of cards in the stack
-const wrapIndex = wrap(0, memoriesData.length)
+const TOTAL_PLANES = 16
+const SPRING_CONFIG = { stiffness: 350, damping: 35, mass: 0.5 }
 
 export default function OurMemories() {
   const prefersReducedMotion = useReducedMotion()
-  const sectionRef = useRef(null)
-  
-  // Safe window size initialization
+
   const [isMobile, setIsMobile] = useState(false)
+  const [isFastScroll, setIsFastScroll] = useState(false)
+  const fastRef = useRef(false)
+
   useEffect(() => {
     setIsMobile(window.innerWidth < 768)
-    const onResize = () => setIsMobile(window.innerWidth < 768)
+    function onResize() { setIsMobile(window.innerWidth < 768) }
     window.addEventListener('resize', onResize, { passive: true })
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // ── 1. SCROLL TRACKING ────────────────────────────────────────────────────
-  // Track scroll progress of this specific section.
-  // When the top of the section hits the top of viewport -> 0.
-  // When the bottom of the section hits the bottom of viewport -> 1.
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"]
-  })
+  // ── 1. RAW SCROLL POSITION ────────────────────────────────────────────────
+  const scrollY = useMotionValue(0)
 
-  // ── 2. SPRING SMOOTHING ───────────────────────────────────────────────────
-  // Smooth the scroll progress so the 3D stack glides beautifully instead
-  // of rigidly sticking to the exact scroll pixel.
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 400,
-    damping: 60,
-    mass: 0.5
+  useEffect(() => {
+    function onScroll() { scrollY.set(window.scrollY) }
+    scrollY.set(window.scrollY)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [scrollY])
+
+  // ── 2. VELOCITY ───────────────────────────────────────────────────────────
+  const scrollVelocity = useVelocity(scrollY)
+
+  // ── 3. SPRING SMOOTHING ───────────────────────────────────────────────────
+  const smoothVelocity = useSpring(scrollVelocity, SPRING_CONFIG)
+
+  // ── 4. FAST SCROLL DETECTION ──────────────────────────────────────────────
+  useMotionValueEvent(smoothVelocity, 'change', (v) => {
+    const fast = Math.abs(v) > 400
+    if (fast !== fastRef.current) {
+      fastRef.current = fast
+      setIsFastScroll(fast)
+    }
   })
 
   // ── BUILD PLANE STACK ─────────────────────────────────────────────────────
-  // Cycle through the 8 source images up to 16 total cards.
   const planes = Array.from({ length: TOTAL_PLANES }, (_, i) => {
-    const dataIdx = wrapIndex(i)
+    const dataIdx = wrap(0, memoriesData.length, i)
     return { index: i, ...memoriesData[dataIdx] }
   })
 
   return (
     <section
-      ref={sectionRef}
-      className="memories-section"
+      className={`memories-section${isFastScroll ? ' memories-fast' : ''}`}
       aria-label="Our Memories"
     >
-      {/* 
-        3D Viewport — sticky so it stays on screen while the parent section 
-        scrolls. Perspective is handled in CSS.
-      */}
       <div className="memories-viewport">
         {/* Massive heading pinned to the top-left of the viewport */}
         <div className="memories-heading">
@@ -82,18 +83,15 @@ export default function OurMemories() {
             <Plane
               key={`plane-${index}`}
               index={index}
-              total={TOTAL_PLANES}
               src={src}
               alt={alt}
               caption={caption}
-              progress={smoothProgress}
+              smoothVelocity={smoothVelocity}
               isMobile={isMobile}
               prefersReducedMotion={prefersReducedMotion}
             />
           ))}
         </div>
-
-        <div className="memories-hint">SCROLL TO SURF</div>
       </div>
     </section>
   )

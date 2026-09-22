@@ -1559,25 +1559,23 @@ a, button, .nav-link, .btn {
 
 /* ---- MEMORIES SECTION (OurMemories — Motion 3D scroll-velocity planes) ---- */
 
-/* Outer section shell: tall enough to act as a scroll track */
+/* Outer section shell: tall enough to hold the static stack */
 .memories-section {
   position: relative;
   width: 100%;
-  height: 400vh;
+  min-height: 820px;
   background: var(--bg);
+  overflow: hidden;
 }
 
 /* ── 3D VIEWPORT — CSS sets the perspective ───────────────────────────────── */
-/* Motion handles all per-plane transforms (x, y, z, rotateY, rotate) inline. */
 .memories-viewport {
-  position: sticky;
-  top: 0;
-  /* perspective: 1400px creates the depth illusion */
+  position: relative;
   perspective: 1400px;
   perspective-origin: 50% 50%;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  height: 820px;
+  overflow: visible;
 }
 
 /* Heading — absolutely pinned top-left, massive text */

@@ -1,72 +1,72 @@
 /**
- * Plane.jsx — Individual 3D plane card for the scroll-linked diagonal stack.
+ * Plane.jsx — Individual 3D plane card for the diagonal stack.
  *
- * Position maps directly to the user's scroll progress:
- *   - The stack is a continuous diagonal line in 3D space.
- *   - `dist` = index - activeIndex
- *   - Cards with dist > 0 are pushed back (negative Z), right (+X), and up (-Y).
- *   - Cards with dist < 0 are pulled towards/past the camera (+Z).
+ * Cards are laid out in a static 3D diagonal line.
+ * When the user scrolls, `smoothVelocity` provides a gentle drift effect
+ * to the cards, pulling them slightly forward/backward based on scroll speed.
  */
 import { motion, useTransform, AnimatePresence, useReducedMotion } from 'motion/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
+
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
 
 export default function Plane({
   index,
-  total,
   src,
   alt,
   caption,
-  progress,
+  smoothVelocity,
   isMobile,
   prefersReducedMotion,
 }) {
   const [hovered, setHovered] = useState(false)
+  const captionRef = useRef(null)
 
   // ── SIZING ────────────────────────────────────────────────────────────────
-  const CARD_W = isMobile ? 240 : 420
-  const CARD_H = isMobile ? 320 : 540
-
-  // ── MATH: CONTINUOUS INDEX ────────────────────────────────────────────────
-  // activeIndex ranges from 0 to (total - 1) based on scroll progress.
-  const activeIndex = useTransform(progress, (p) => p * (total - 1))
-  
-  // dist represents how far this card is from being the "active" front card.
-  // dist = 0: Active card (front)
-  // dist = 1: Next card in sequence (behind)
-  // dist = -1: Previous card (passed the camera)
-  const dist = useTransform(activeIndex, (a) => index - a)
+  const CARD_W = isMobile ? 180 : 320
+  const CARD_H = isMobile ? 240 : 420
 
   // ── 3D POSITIONING ALONG THE DIAGONAL ─────────────────────────────────────
-  // Base offset to anchor the active card (dist=0) near the bottom-left.
-  const BASE_X = isMobile ? -20 : -350
-  const BASE_Y = isMobile ? 80 : 180
+  // The cards are placed statically based on their index (0 to 15).
+  // Index 0 is bottom-left (closest). Index 15 is top-right (furthest).
+  
+  // Base offset to anchor the front card near the bottom-left.
+  const BASE_X = isMobile ? -60 : -250
+  const BASE_Y = isMobile ? 120 : 180
 
   // Per-index spacing increments
-  const STEP_Z = isMobile ? 250 : 350  // Depth between cards
-  const STEP_X = isMobile ? 120 : 200  // Horizontal shift per card
-  const STEP_Y = isMobile ? -80 : -120 // Vertical shift per card (negative = up)
+  const STEP_Z = isMobile ? 150 : 250  // Depth between cards
+  const STEP_X = isMobile ? 80 : 160   // Horizontal shift per card
+  const STEP_Y = isMobile ? -50 : -80  // Vertical shift per card (negative = up)
 
-  // Calculate final absolute translations based on `dist`
-  const x = useTransform(dist, (d) => BASE_X + d * STEP_X)
-  const y = useTransform(dist, (d) => BASE_Y + d * STEP_Y)
-  
-  // Z depth: negative pushes back into the screen. 
-  // If prefersReducedMotion, we flat-stack them using scale instead? 
-  // We'll keep Z for structure, but skip if strictly requested.
-  const z = useTransform(dist, (d) => {
-    if (prefersReducedMotion) return 0
-    return -d * STEP_Z
-  })
+  const staticX = BASE_X + index * STEP_X
+  const staticY = BASE_Y + index * STEP_Y
+  const staticZ = prefersReducedMotion ? 0 : -index * STEP_Z
 
-  // Opacity: 
-  // - fade in rapidly right before passing camera (dist = -0.5)
-  // - fully opaque at dist = 0
-  // - slowly fade out deep in the background (dist > 8)
-  const opacity = useTransform(
-    dist,
-    [-1.5, -0.5, 0, 6, 12],
-    [0, 1, 1, 0.8, 0]
+  // ── VELOCITY DRIFT ────────────────────────────────────────────────────────
+  // When scrolling fast, the entire stack shifts slightly in Z and Y.
+  // We phase-delay it slightly by index so it feels like a wave.
+  const phaseDelay = index * 2
+  const lo = -1200 - phaseDelay
+  const hi = 1200 + phaseDelay
+
+  // velocityZ: Fast scroll pushes the cards back or pulls them forward
+  const velocityZ = useTransform(
+    smoothVelocity,
+    [lo, 0, hi],
+    prefersReducedMotion ? [0, 0, 0] : [-100, 0, -100]
   )
+  
+  const finalZ = useTransform(velocityZ, (vz) => staticZ + vz)
+
+  // velocityY: Subtle vertical drift
+  const velocityY = useTransform(
+    smoothVelocity,
+    [lo, 0, hi],
+    prefersReducedMotion ? [0, 0, 0] : [30, 0, -30]
+  )
+
+  const finalY = useTransform(velocityY, (vy) => staticY + vy)
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
@@ -80,19 +80,21 @@ export default function Plane({
         top: '50%',
         marginLeft: -CARD_W / 2,
         marginTop: -CARD_H / 2,
-        x,
-        y,
-        translateZ: z,
-        opacity,
+        x: staticX,
+        y: finalY,
+        translateZ: finalZ,
+      }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.05, duration: 0.5 }}
+      whileHover={{
+        scale: 1.05,
+        transition: { duration: 0.2 }
       }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
     >
-      {/* 
-        Index badge positioned slightly outside the image.
-        We removed overflow: hidden from the plane container in CSS
-        so this badge can float freely.
-      */}
+      {/* Index badge positioned slightly outside the image. */}
       <span className="memories-index">
         {String(index).padStart(2, '0')}
       </span>
