@@ -1,17 +1,12 @@
 /**
  * Plane.jsx — Individual 3D plane card for OurMemories section.
  *
- * Each Plane is a self-contained motion card that:
- *  1. Reads the shared smoothed velocity motion value from props
- *  2. Computes its own useTransform outputs (position + velocity offset)
- *     with a per-plane phase delay so the ripple propagates, not locksteps
- *  3. Lifts toward viewer on hover and shows an animated scramble-text caption
- *
- * Physics mapping:
- *  useTransform(smoothVelocity, ...)  → velocity → per-plane Z/Y offset (phase-delayed)
- *  useSpring                           → smooths the raw velocity (done in parent)
- *  AnimatePresence + motion.div        → caption mount/unmount animation
- *  animate (imperative)               → scramble-text character cycling on hover
+ * Physics mapping (each comment links the Motion API to its behavior):
+ *  useTransform(smoothVelocity, ...)  → per-plane Z depth (phase-delayed ripple)
+ *  useTransform(smoothVelocity, ...)  → per-plane Y drift (wave feel)
+ *  useTransform(velocityDrift, ...)   → combines drift with base Y position
+ *  AnimatePresence + motion.div       → caption animates in on hover, out on leave
+ *  animate() imperative               → scramble-text character cycling on hover
  */
 import { useState, useCallback, useRef } from 'react'
 import {
@@ -22,19 +17,8 @@ import {
   useReducedMotion,
 } from 'motion/react'
 
-// Characters used for the scramble-text reveal on hover
 const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
 
-/**
- * @param {number}      index        - plane index (0-based), used for phase delay
- * @param {string}      src          - image src path
- * @param {string}      alt          - image alt text
- * @param {string}      caption      - text shown on hover (scramble-revealed)
- * @param {number}      col          - column position in the grid (0..3)
- * @param {number}      row          - row position in the grid (0..3)
- * @param {MotionValue} smoothVelocity  - shared spring-smoothed scroll velocity
- * @param {boolean}     isMobile     - reduces depth on small screens
- */
 export default function Plane({
   index,
   src,
@@ -47,75 +31,77 @@ export default function Plane({
 }) {
   const [hovered, setHovered] = useState(false)
   const captionRef = useRef(null)
-  const scrambleAnimRef = useRef(null)
+  const scrambleRef = useRef(null)
+
+  // useReducedMotion — when true, skip all velocity-driven motion
   const prefersReducedMotion = useReducedMotion()
 
-  // ── DIAGONAL LAYOUT ───────────────────────────────────────────────────────
-  // Each plane is placed on a diagonal ascending grid.
-  // col drives X, row drives Y — combined they create the staggered cascade.
-  const CARD_W = isMobile ? 180 : 240
-  const CARD_H = isMobile ? 240 : 320
-  const GAP_X  = isMobile ? 200 : 270
-  const GAP_Y  = isMobile ? 220 : 290
-  // Diagonal offset: each column shifts up by half a row gap
-  const baseX = col * GAP_X - (isMobile ? 60 : 100)
-  const baseY = row * GAP_Y + col * (GAP_Y * 0.5) - (isMobile ? 80 : 120)
+  // ── GRID GEOMETRY ─────────────────────────────────────────────────────────
+  const CARD_W = isMobile ? 160 : 220
+  const CARD_H = isMobile ? 210 : 290
+  const GAP_X  = isMobile ? 180 : 250
+  const GAP_Y  = isMobile ? 200 : 270
 
-  // Slight per-plane base rotation for the scattered look
-  const baseRotate = ((index % 7) - 3) * 2.5   // –7.5° … +7.5°
-  const baseRotateY = ((index % 5) - 2) * 4     // –8° … +8°
+  // Diagonal ascending layout: each column shifts up by 40% of a row gap
+  const baseX = col * GAP_X - (isMobile ? 50 : 80)
+  const baseY = row * GAP_Y + col * (GAP_Y * 0.4) - (isMobile ? 60 : 100)
 
-  // ── VELOCITY → PER-PLANE 3D OFFSET ───────────────────────────────────────
-  // useTransform maps the smoothed velocity into a Z/Y displacement.
-  // Each plane applies a PHASE DELAY via a small stagger multiplier on
-  // the input range — plane index 0 responds first, later planes lag behind.
-  // This is how the "ripple propagates" rather than every card moving together.
-  const phaseDelay = index * 3         // px — larger index = more lag in input space
-  const maxDepth   = isMobile ? 60 : 120  // cap Z for mobile GPU safety
+  // Scattered per-plane base rotations for the stacked-card look
+  const baseRotate  = ((index % 7) - 3) * 2.5   // –7.5° to +7.5°
+  const baseRotateY = ((index % 5) - 2) * 4      // –8°   to +8°
 
-  // velocityZ: fast scroll → plane retreats into depth (negative Z)
-  // useTransform: smoothVelocity value → output range for Z translation
+  // ── PHASE-DELAYED VELOCITY INPUT RANGE ────────────────────────────────────
+  // Each plane shifts its velocity input range outward by (index * 2).
+  // Plane 0 responds first at ±1200 px/s. Plane 19 responds at ±1238 px/s.
+  // This tiny stagger makes the ripple PROPAGATE across the grid,
+  // not every card moving at the exact same moment.
+  const phaseShift = index * 2
+  const lo = -1200 - phaseShift
+  const hi =  1200 + phaseShift
+  const maxZ    = isMobile ? 50 : 100
+  const driftAmt = isMobile ? 15 : 30
+
+  // useTransform #1: velocity → translateZ (retreat into depth on fast scroll)
+  // Output is [0,0,0] when reduced motion is preferred → no-op
   const velocityZ = useTransform(
     smoothVelocity,
-    [-1500 + phaseDelay, 0, 1500 - phaseDelay],
-    [-maxDepth, 0, -maxDepth],
+    [lo, 0, hi],
+    prefersReducedMotion ? [0, 0, 0] : [-maxZ, 0, -maxZ],
   )
 
-  // velocityY: fast scroll → slight vertical drift creates wave feel
-  const velocityY = useTransform(
+  // useTransform #2: velocity → Y drift amount (raw drift, centred at 0)
+  const rawDrift = useTransform(
     smoothVelocity,
-    [-1500 + phaseDelay, 0, 1500 - phaseDelay],
-    [isMobile ? 20 : 40, 0, isMobile ? -20 : -40],
+    [lo, 0, hi],
+    prefersReducedMotion ? [0, 0, 0] : [driftAmt, 0, -driftAmt],
   )
 
-  // ── HOVER: SCRAMBLE-TEXT CAPTION ─────────────────────────────────────────
-  // On hover, imperatively animate a counter 0 → caption.length using Motion's
-  // `animate()`. The onUpdate callback swaps random characters in until each
-  // position resolves to the correct final character — a scramble effect.
+  // useTransform #3: adds the static baseY to the drift motion value
+  // so the final Y position = baseY + drift (both are numbers, output is MotionValue)
+  // This is called unconditionally at top level — respects Rules of Hooks.
+  const composedY = useTransform(rawDrift, (drift) => baseY + drift)
+
+  // ── SCRAMBLE-TEXT on hover ────────────────────────────────────────────────
+  // animate() drives a counter 0 → caption.length. onUpdate progressively
+  // replaces random characters with the correct final character — scramble effect.
   const startScramble = useCallback(() => {
     if (prefersReducedMotion || !captionRef.current) return
-    // Cancel any in-progress scramble
-    if (scrambleAnimRef.current) scrambleAnimRef.current.stop()
+    if (scrambleRef.current) scrambleRef.current.stop()
 
     const target = caption
-    const len = target.length
-    let output = Array(len).fill(' ')
+    let chars = Array.from({ length: target.length }, () => ' ')
 
-    // animate() drives a plain number 0 → len over 0.6s
-    // onUpdate fires every frame with the current progress value
-    scrambleAnimRef.current = animate(0, len, {
-      duration: 0.6,
+    scrambleRef.current = animate(0, target.length, {
+      duration: 0.55,
       ease: 'easeOut',
-      onUpdate(latest) {
-        const resolved = Math.floor(latest)
-        output = output.map((ch, i) => {
-          if (i < resolved) return target[i]          // finalized
-          // Still scrambling: pick a random character
-          return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
-        })
-        if (captionRef.current) {
-          captionRef.current.textContent = output.join('')
-        }
+      onUpdate(v) {
+        const resolved = Math.floor(v)
+        chars = chars.map((_, i) =>
+          i < resolved
+            ? target[i]  // finalized character
+            : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)]
+        )
+        if (captionRef.current) captionRef.current.textContent = chars.join('')
       },
       onComplete() {
         if (captionRef.current) captionRef.current.textContent = target
@@ -124,56 +110,43 @@ export default function Plane({
   }, [caption, prefersReducedMotion])
 
   const stopScramble = useCallback(() => {
-    if (scrambleAnimRef.current) {
-      scrambleAnimRef.current.stop()
-      scrambleAnimRef.current = null
-    }
-    // Snap caption to final text on leave
+    if (scrambleRef.current) { scrambleRef.current.stop(); scrambleRef.current = null }
     if (captionRef.current) captionRef.current.textContent = caption
   }, [caption])
 
-  // ── RENDER ─────────────────────────────────────────────────────────────────
+  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <motion.div
       className="memories-plane"
       style={{
         width: CARD_W,
         height: CARD_H,
-        // Base position drives the scattered diagonal layout
         x: baseX,
-        y: prefersReducedMotion ? baseY : baseY,  // same; skip velocity below
-        // Per-plane velocity offset (phase-delayed ripple)
-        // In reduced-motion mode these values won't be wired up
-        z: prefersReducedMotion ? 0 : velocityZ,
+        // composedY = baseY + velocity drift (MotionValue)
+        y: composedY,
+        // translateZ drives the Z-depth ripple effect
+        translateZ: velocityZ,
         rotateY: baseRotateY,
         rotate: baseRotate,
       }}
-      // Entrance animation: planes fade + rise in with stagger
-      initial={{ opacity: 0, scale: 0.85 }}
+      // Entrance stagger: each plane fades/scales in with a delay proportional to index
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{
-        delay: prefersReducedMotion ? 0 : index * 0.05,
-        duration: prefersReducedMotion ? 0.01 : 0.6,
+        delay: prefersReducedMotion ? 0 : index * 0.04,
+        duration: prefersReducedMotion ? 0.01 : 0.55,
         ease: [0.16, 1, 0.3, 1],
       }}
-      // Hover: lift toward viewer (positive Z), reduce rotations, scale up
+      // Hover: straighten rotation, scale up (Z handled by translateZ in style)
       whileHover={{
-        z: prefersReducedMotion ? 0 : 80,
-        scale: 1.08,
+        scale: 1.1,
         rotateY: 0,
-        rotate: baseRotate * 0.3,
-        transition: { duration: 0.3, ease: 'easeOut' },
+        rotate: baseRotate * 0.2,
+        transition: { duration: 0.25, ease: 'easeOut' },
       }}
-      onHoverStart={() => {
-        setHovered(true)
-        startScramble()
-      }}
-      onHoverEnd={() => {
-        setHovered(false)
-        stopScramble()
-      }}
+      onHoverStart={() => { setHovered(true);  startScramble() }}
+      onHoverEnd  ={() => { setHovered(false); stopScramble()  }}
     >
-      {/* Photo */}
       <img
         src={src}
         alt={alt}
@@ -181,22 +154,20 @@ export default function Plane({
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
       />
 
-      {/* Index badge — top-left corner */}
       <span className="memories-index">
         {String(index).padStart(2, '0')}
       </span>
 
-      {/* Hover caption — AnimatePresence so it animates OUT on leave */}
+      {/* AnimatePresence ensures the caption fully animates OUT before unmounting */}
       <AnimatePresence>
         {hovered && (
           <motion.div
             className="memories-caption"
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
           >
-            {/* captionRef.current is updated imperatively by the scramble loop */}
             <span ref={captionRef}>{caption}</span>
           </motion.div>
         )}
