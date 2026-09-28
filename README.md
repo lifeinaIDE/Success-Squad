@@ -1,4 +1,4 @@
-﻿# Success Squad React — Migration README
+﻿# Success Squad React - README
 
 ## Overview
 Full 1:1 React 18 + Vite port of the Success Squad static site. All 7 pages share a single Navbar/Footer via a Layout route.
