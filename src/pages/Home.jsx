@@ -41,22 +41,70 @@ export default function Home() {
         <div className="hero-glow glow-1" />
         <div className="hero-glow glow-2" />
 
-        <div className="hero-content">
-          <div className="hero-badge">
-            <span className="badge-dot" />
-            Entrepreneurship Development Cell
+        <div className="hero-columns">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <span className="badge-dot" />
+              Entrepreneurship Development Cell
+            </div>
+            <h1 className="hero-title">
+              <span className="line-reveal">From Vision</span>
+              <span className="line-reveal delay-1">to <em>Venture.</em></span>
+            </h1>
+            <p className="hero-sub line-reveal delay-2">
+              We ignite entrepreneurial spirits, nurture bold ideas, and build the founders of
+              tomorrow — right here on campus.
+            </p>
+            <div className="hero-actions line-reveal delay-3">
+              <Link to="/about" className="btn btn-primary">Discover EDC</Link>
+              <Link to="/events" className="btn btn-ghost">View Events →</Link>
+            </div>
           </div>
-          <h1 className="hero-title">
-            <span className="line-reveal">From Vision</span>
-            <span className="line-reveal delay-1">to <em>Venture.</em></span>
-          </h1>
-          <p className="hero-sub line-reveal delay-2">
-            We ignite entrepreneurial spirits, nurture bold ideas, and build the founders of
-            tomorrow — right here on campus.
-          </p>
-          <div className="hero-actions line-reveal delay-3">
-            <Link to="/about" className="btn btn-primary">Discover EDC</Link>
-            <Link to="/events" className="btn btn-ghost">View Events →</Link>
+
+          <div className="hero-journey" aria-hidden="true">
+            <svg className="journey-svg" viewBox="0 0 380 480" preserveAspectRatio="xMidYMid meet">
+              <path
+                className="journey-path"
+                d="M57,422 C67.77,406.07 99.43,358.33 121.6,326.4 C143.77,294.47 167.2,262.4 190,230.4 C212.8,198.4 236.23,166.4 258.4,134.4 C280.57,102.4 312.23,54.4 323,38.4"
+              />
+            </svg>
+
+            <div className="journey-particle" />
+
+            <div className="journey-node node-idea">
+              <span className="node-icon">💡</span>
+              <span className="node-label">Idea</span>
+            </div>
+            <div className="journey-node node-build">
+              <span className="node-icon">⚙️</span>
+              <span className="node-label">Build</span>
+            </div>
+            <div className="journey-node node-team">
+              <span className="node-icon">🤝</span>
+              <span className="node-label">Team</span>
+            </div>
+            <div className="journey-node node-launch">
+              <span className="node-icon">📡</span>
+              <span className="node-label">Launch</span>
+            </div>
+            <div className="journey-node node-venture">
+              <span className="node-icon">✦</span>
+              <span className="node-label">Venture</span>
+            </div>
+
+            <div className="journey-gather">
+              <span className="gather-dot gd-1" />
+              <span className="gather-dot gd-2" />
+              <span className="gather-dot gd-3" />
+              <span className="gather-dot gd-4" />
+              <span className="gather-dot gd-5" />
+            </div>
+
+            <div className="journey-rocket">🚀</div>
+
+            <span className="journey-spark spark-1" />
+            <span className="journey-spark spark-2" />
+            <span className="journey-spark spark-3" />
           </div>
         </div>
 
