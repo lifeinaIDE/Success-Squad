@@ -1,14 +1,12 @@
 /**
  * src/services/firebase.js
  *
- * Initialises the Firebase app and exports the Firestore (db) and
- * Firebase Storage (storage) instances used throughout the app.
+ * Initialises the Firebase app lazily — only when config values are present.
+ * If any required env var is missing (e.g. during local dev before .env.local
+ * is set, or on Vercel before env vars are configured), we return null stubs
+ * instead of crashing the entire React tree.
  *
- * ALL config values are read from Vite environment variables so that
- * API keys are never committed to source control.
- *
- * Required env vars (add to .env.local for local dev, Vercel project
- * settings for production — never commit actual values):
+ * Required env vars (copy .env.example → .env.local for local dev):
  *   VITE_FIREBASE_API_KEY
  *   VITE_FIREBASE_AUTH_DOMAIN
  *   VITE_FIREBASE_PROJECT_ID
@@ -17,12 +15,12 @@
  *   VITE_FIREBASE_APP_ID
  */
 
-import { initializeApp } from 'firebase/app'
-import { getFirestore }   from 'firebase/firestore'
-import { getStorage }     from 'firebase/storage'
-import { getAuth }        from 'firebase/auth'
+import { initializeApp, getApps } from 'firebase/app'
+import { getFirestore }            from 'firebase/firestore'
+import { getStorage }              from 'firebase/storage'
+import { getAuth }                 from 'firebase/auth'
 
-const firebaseConfig = {
+const config = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -31,8 +29,28 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const app     = initializeApp(firebaseConfig)
+// Only initialise if every required value is present
+const isConfigured = Object.values(config).every(Boolean)
 
-export const db      = getFirestore(app)
-export const storage = getStorage(app)
-export const auth    = getAuth(app)
+let db      = null
+let storage = null
+let auth    = null
+
+if (isConfigured) {
+  try {
+    // Avoid duplicate app error if HMR re-runs this module
+    const app = getApps().length ? getApps()[0] : initializeApp(config)
+    db      = getFirestore(app)
+    storage = getStorage(app)
+    auth    = getAuth(app)
+  } catch (err) {
+    console.warn('[Firebase] Initialisation failed — registration features disabled.', err)
+  }
+} else {
+  console.warn(
+    '[Firebase] Missing env vars — registration features disabled.\n' +
+    'Copy .env.example → .env.local and fill in your Firebase project config.'
+  )
+}
+
+export { db, storage, auth }
