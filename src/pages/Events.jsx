@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
-import EventCard from '../components/ui/EventCard.jsx'
-import { upcomingEvents, pastEvents } from '../data/eventsData.js'
+import EFestHero from '../components/events/EFestHero.jsx'
+import { pastEvents } from '../data/eventsData.js'
 
 export default function Events() {
   useDocumentTitle('Events')
@@ -14,12 +14,12 @@ export default function Events() {
         <p>From hackathons to fireside chats, we build experiences that inspire, challenge, and connect.</p>
       </div>
 
-      {/* UPCOMING */}
+      {/* UPCOMING — now a single E-Fest hero card */}
       <section className="section" style={{ background: 'var(--bg)' }}>
         <div className="section-label">Upcoming</div>
         <h2 className="section-title">What's <span className="accent">next.</span></h2>
         <div className="event-cards">
-          {upcomingEvents.map((e) => <EventCard key={e.id} {...e} />)}
+          <EFestHero />
         </div>
       </section>
 
