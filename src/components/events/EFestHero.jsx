@@ -1,20 +1,17 @@
 /**
  * EFestHero.jsx — Full-width flagship card for E-Fest '26.
  *
- * "Register Now" opens the hidden registration hub in a new tab.
- * The hub URL slug comes from VITE_FEST_SLUG env var (not hardcoded).
- * If the env var isn't set, the button links to the events page as fallback.
+ * "Register Now" navigates (React Router internal link) to the hidden
+ * registration hub route. The slug comes from VITE_FEST_SLUG env var;
+ * falls back to 'e-fest-26' — matching the same default in App.jsx.
  */
+import { Link } from 'react-router-dom'
+
+const FEST_SLUG          = import.meta.env.VITE_FEST_SLUG || 'e-fest-26'
+const HUB_PATH           = `/fest/${FEST_SLUG}`
+const EFEST_EVENTS_COUNT = 6
 
 export default function EFestHero() {
-  // Compute URL inside component so window is guaranteed available
-  const slug    = import.meta.env.VITE_FEST_SLUG
-  const hubUrl  = slug
-    ? `${window.location.origin}/fest/${slug}`
-    : '/events'
-
-  const EFEST_EVENTS_COUNT = 6
-
   return (
     <div className="efest-hero-card highlight-card event-card">
       <div className="efest-hero-inner">
@@ -34,15 +31,14 @@ export default function EFestHero() {
           </p>
 
           <div className="efest-hero-actions">
-            <a
+            {/* Use React Router Link so it works as a proper internal SPA navigation */}
+            <Link
               id="efest-register-btn"
-              href={hubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              to={HUB_PATH}
               className="btn btn-primary"
             >
-              Register Now ↗
-            </a>
+              Register Now →
+            </Link>
           </div>
         </div>
 
