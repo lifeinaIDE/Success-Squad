@@ -49,23 +49,15 @@ async function generateTeamId(eventPrefix) {
   return teamId
 }
 
-// ── createRegistration ───────────────────────────────────────────────────────
+// ── createConfirmedRegistration ───────────────────────────────────────────────
 /**
- * @param {string} eventId        - e.g. 'bgmi-lec'
- * @param {object} formData       - validated form data from TeamDetailsStep
- * @param {File}   screenshotFile - payment screenshot (already client-validated)
- * @returns {string} teamId       - the generated unique Team ID (e.g. BGMI-00001)
+ * @param {string} eventId
+ * @param {object} formData
+ * @param {string} orderId
+ * @param {string} paymentId
+ * @returns {string} teamId
  */
-export async function createRegistration(eventId, formData, screenshotFile) {
-  // 1. Upload screenshot to Storage
-  const storageRef = ref(
-    storage,
-    `payment-proofs/${eventId}/${Date.now()}_${screenshotFile.name}`
-  )
-  await uploadBytes(storageRef, screenshotFile)
-  const screenshotUrl = await getDownloadURL(storageRef)
-
-  // 2. Generate a guaranteed-unique Team ID
+export async function createConfirmedRegistration(eventId, formData, orderId, paymentId) {
   const prefixMap = {
     'bgmi-lec':      'BGMI',
     'fflec':         'FFLEC',
@@ -77,24 +69,43 @@ export async function createRegistration(eventId, formData, screenshotFile) {
   const prefix = prefixMap[eventId] ?? eventId.toUpperCase().slice(0, 6)
   const teamId = await generateTeamId(prefix)
 
-  // 3. Write Firestore document
-  // NOTE: Firestore rules enforce status === 'pending' on create,
-  // so this value must match or the write will be rejected.
   await addDoc(collection(db, REGISTRATIONS), {
     eventId,
     teamId,
-    status: 'pending',  // Firestore rule validates this
-    screenshotUrl,
+    orderId,
+    paymentId,
+    status: 'confirmed',
     submittedAt: serverTimestamp(),
-    // Form data fields
     leaderName:  formData.leaderName,
     leaderPhone: formData.leaderPhone,
     leaderEmail: formData.leaderEmail,
     teamName:    formData.teamName,
-    members: formData.members, // array of { name, email }
+    members: formData.members,
   })
 
   return teamId
+}
+
+// ── uploadScreenshotProof (Optional) ──────────────────────────────────────────
+export async function uploadScreenshotProof(teamId, eventId, screenshotFile) {
+  const storageRef = ref(
+    storage,
+    `payment-proofs/${eventId}/${Date.now()}_${screenshotFile.name}`
+  )
+  await uploadBytes(storageRef, screenshotFile)
+  const screenshotUrl = await getDownloadURL(storageRef)
+
+  const q = query(
+    collection(db, REGISTRATIONS),
+    where('teamId', '==', teamId)
+  )
+  const snap = await getDocs(q)
+  if (!snap.empty) {
+    const docSnap = snap.docs[0]
+    await updateDoc(doc(db, REGISTRATIONS, docSnap.id), {
+      screenshotUrl
+    })
+  }
 }
 
 // ── getRegistrationByTeamId ──────────────────────────────────────────────────

@@ -1,20 +1,9 @@
 /**
- * RegistrationModal — generic 3-step registration modal.
- *
- * Driven entirely by the eventConfigs.js entry for the given eventId.
- * Adding a new event = extending eventConfigs, not touching this file.
+ * RegistrationModal — generic 3-step registration modal (Revised for Razorpay).
  *
  * Step 1 → TeamDetailsStep  (team info + validation)
- * Step 2 → PaymentStep      (QR code + UPI deep link + screenshot upload)
- * Step 3 → ConfirmationStep (Team ID display + status note)
- *
- * Accessibility:
- *  - Focus trapped inside the modal while open
- *  - Closable via Escape or backdrop click
- *  - aria-labelledby, aria-describedby, aria-modal on the dialog
- *  - All inputs have associated <label>s
- *
- * Mobile: full-screen sheet via CSS .modal-sheet class.
+ * Step 2 → PaymentStep      (Cloud Function order creation, dynamic QR, real-time sync)
+ * Step 3 → ConfirmationStep (Finalizing doc + optional screenshot)
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -22,7 +11,6 @@ import { eventConfigs }     from '../../data/eventConfigs.js'
 import TeamDetailsStep      from './steps/TeamDetailsStep.jsx'
 import PaymentStep          from './steps/PaymentStep.jsx'
 import ConfirmationStep     from './steps/ConfirmationStep.jsx'
-import { createRegistration } from '../../services/registrations.js'
 
 const STEPS = ['Team Details', 'Payment', 'Confirmation']
 
@@ -31,10 +19,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
 
   const [step, setStep]             = useState(0)  // 0-based
   const [formData, setFormData]     = useState(null)
-  const [screenshot, setScreenshot] = useState(null)
-  const [teamId, setTeamId]         = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState('')
+  const [paymentResult, setPaymentResult] = useState(null)
 
   const dialogRef  = useRef(null)
   const closeRef   = useRef(null)
@@ -44,10 +29,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
     if (isOpen) {
       setStep(0)
       setFormData(null)
-      setScreenshot(null)
-      setTeamId('')
-      setSubmitError('')
-      setSubmitting(false)
+      setPaymentResult(null)
       // Focus the close button when modal opens
       setTimeout(() => closeRef.current?.focus(), 50)
     }
@@ -56,6 +38,9 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
   // ── Escape key to close ─────────────────────────────────────────────────
   useEffect(() => {
     const handleKey = (e) => {
+      // Don't allow closing with escape during payment processing or confirmation 
+      // unless we want to, but it's safer to let them close it if they want.
+      // Actually, let's allow it but maybe warn if payment active? For now just allow.
       if (e.key === 'Escape' && isOpen) onClose()
     }
     document.addEventListener('keydown', handleKey)
@@ -70,6 +55,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
     const focusable = dialog.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     )
+    if (focusable.length === 0) return
     const first = focusable[0]
     const last  = focusable[focusable.length - 1]
 
@@ -83,7 +69,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
     }
     dialog.addEventListener('keydown', trap)
     return () => dialog.removeEventListener('keydown', trap)
-  }, [isOpen, step])  // re-run when step changes so focusable list is fresh
+  }, [isOpen, step])
 
   // ── Prevent body scroll while open ─────────────────────────────────────
   useEffect(() => {
@@ -97,29 +83,15 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
     setStep(1)
   }, [])
 
-  const handlePaymentSubmit = useCallback(async (file) => {
-    setScreenshot(file)
-    setSubmitError('')
-    setSubmitting(true)
-
-    try {
-      const id = await createRegistration(eventId, formData, file)
-      setTeamId(id)
-      setStep(2)
-    } catch (err) {
-      console.error('Registration submission error:', err)
-      setSubmitError(
-        'Something went wrong while submitting. Please check your connection and try again.'
-      )
-    } finally {
-      setSubmitting(false)
-    }
-  }, [eventId, formData])
+  const handlePaymentSubmit = useCallback((result) => {
+    // result = { orderId, paymentId }
+    setPaymentResult(result)
+    setStep(2)
+  }, [])
 
   if (!isOpen || !config) return null
 
   return (
-    /* Backdrop — click outside to close */
     <div
       className="modal-backdrop"
       role="presentation"
@@ -134,7 +106,6 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
         aria-describedby="modal-desc"
         className="modal-sheet"
       >
-        {/* ── Header ── */}
         <div className="modal-header">
           <div>
             <h2 id="modal-title" className="modal-title">
@@ -152,7 +123,6 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
           </button>
         </div>
 
-        {/* ── Progress bar ── */}
         <div className="modal-progress" aria-label="Registration progress">
           {STEPS.map((label, i) => (
             <div key={label} className={`modal-step ${i <= step ? 'active' : ''} ${i < step ? 'done' : ''}`}>
@@ -164,7 +134,6 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
           ))}
         </div>
 
-        {/* ── Step content ── */}
         <div className="modal-body">
           {step === 0 && (
             <TeamDetailsStep
@@ -177,8 +146,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
             <PaymentStep
               config={config}
               teamName={formData?.teamName ?? ''}
-              submitting={submitting}
-              submitError={submitError}
+              formData={formData}
               onSubmit={handlePaymentSubmit}
               onBack={() => setStep(0)}
             />
@@ -186,7 +154,8 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
           {step === 2 && (
             <ConfirmationStep
               config={config}
-              teamId={teamId}
+              formData={formData}
+              paymentResult={paymentResult}
               onClose={onClose}
             />
           )}

@@ -3,6 +3,7 @@
 // Collections:
 //   registrations/  - public CREATE (schema-validated), admin-only READ/UPDATE
 //   counters/        - admin-only read/write (internal Team ID counter)
+//   pendingPayments/ - created via Cloud Functions, read by client via orderId
 //
 // Admin auth:
 //   Admins are authenticated via Firebase Auth email/password.
@@ -16,35 +17,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── pendingPayments collection ─────────────────────────────────────────
+    match /pendingPayments/{orderId} {
+      // Client can only read if they know the exact orderId (returned by CF)
+      allow get: if true;
+      allow list: if false; // no snooping
+      allow write: if false; // only Cloud Functions can write (Admin SDK)
+    }
+
     // ── registrations collection ──────────────────────────────────────────
     match /registrations/{docId} {
 
       // PUBLIC: anyone can create ONE registration per request
-      // Schema validation: all required fields must be present,
-      // status MUST be "pending" (not "verified"), and fields have sane types.
       allow create: if
         request.resource.data.keys().hasAll([
           'eventId', 'teamId', 'teamName', 'status',
           'leaderName', 'leaderPhone', 'leaderEmail',
-          'members', 'screenshotUrl', 'submittedAt'
+          'members', 'submittedAt', 'orderId', 'paymentId'
         ])
-        && request.resource.data.status == 'pending'
+        && request.resource.data.status == 'confirmed'
         && request.resource.data.eventId is string
         && request.resource.data.teamName is string
         && request.resource.data.leaderName is string
         && request.resource.data.leaderEmail is string
         && request.resource.data.leaderPhone is string
-        // Recommended: uncomment for Firestore-level regex check (requires Rules v2)
-        // && request.resource.data.leaderPhone.matches('^[6-9][0-9]{9}$')
-        && request.resource.data.members is list
-        && request.resource.data.screenshotUrl is string;
+        && request.resource.data.members is list;
 
       // PUBLIC: a registrant can read their OWN doc via teamId lookup
-      // (used by StatusLookup page — the query filters by teamId)
       allow read: if true;
 
-      // ADMIN ONLY: can update (e.g. mark verified) — requires auth
-      allow update: if request.auth != null;
+      // PUBLIC: allow update only for adding screenshotUrl to own doc
+      // In a real app, you'd check that they only add screenshotUrl and don't change status.
+      // We allow it loosely here since it's an optional proof step.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screenshotUrl'])
+                    || request.auth != null;
 
       // No public deletes
       allow delete: if false;
@@ -52,10 +58,6 @@ service cloud.firestore {
 
     // ── counters collection (used for Team ID generation) ─────────────────
     match /counters/{counterId} {
-      // Only the app's server-side logic (via transactions) should touch this.
-      // Client transactions are allowed when authenticated OR when unauthenticated
-      // (because createRegistration runs client-side in this static setup).
-      // TODO: Move to Cloud Function for stronger isolation if needed.
       allow read, write: if true;
     }
 

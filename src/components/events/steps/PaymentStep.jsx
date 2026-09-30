@@ -1,72 +1,115 @@
 /**
- * PaymentStep — Step 2 of RegistrationModal.
+ * PaymentStep — Step 2 of RegistrationModal (Revised).
  *
- * Shows:
- *  - Order summary (event name, team name, amount)
- *  - QR code image for UPI scan
- *  - "Pay via UPI App" button: on mobile fires a upi:// deep link,
- *    on desktop shows a note that deep link won't work — scan the QR.
- *  - Screenshot upload with thumbnail preview + size/type validation
- *  - "Submit Payment Proof" disabled until valid file attached + not submitting
+ * Flow:
+ *  - Initial state: "Unlock Payment QR" button.
+ *  - On tap: calls Cloud Function `createPaymentOrder`, revealing QR + countdown.
+ *  - Live countdown synced to server expiry.
+ *  - Listens to `pendingPayments/{orderId}` via Firestore onSnapshot.
+ *  - Automatically advances to Step 3 when status === 'paid'.
+ *  - Expiry/Fail triggers `expireOrder` fallback and shows retry button.
  */
 
-import { useState, useRef } from 'react'
-
-const MAX_SIZE_MB  = 5
-const MAX_SIZE_B   = MAX_SIZE_MB * 1024 * 1024
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+import { useState, useEffect } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../../../services/firebase.js'
 
 function isMobileDevice() {
   return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
 }
 
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 export default function PaymentStep({
   config,
   teamName,
-  submitting,
-  submitError,
+  formData,
   onSubmit,
   onBack,
 }) {
-  const [file, setFile]           = useState(null)
-  const [preview, setPreview]     = useState(null)
-  const [fileError, setFileError] = useState('')
-  const fileInputRef = useRef(null)
+  // states: 'initial', 'creating', 'active', 'paid', 'expired', 'error'
+  const [orderState, setOrderState] = useState('initial')
+  const [orderData, setOrderData]   = useState(null)
+  const [timeLeft, setTimeLeft]     = useState(300)
+  const [errorMsg, setErrorMsg]     = useState('')
 
-  const handleFile = (selected) => {
-    setFileError('')
-    setFile(null)
-    setPreview(null)
-    if (!selected) return
-
-    if (!ALLOWED_TYPES.includes(selected.type)) {
-      setFileError(`Unsupported file type. Please upload a JPG, PNG, or WebP image.`)
-      return
+  // 1. Create Order
+  const handleUnlock = async () => {
+    setOrderState('creating')
+    setErrorMsg('')
+    try {
+      if (!functions) throw new Error('Cloud Functions not initialized')
+      const createOrder = httpsCallable(functions, 'createPaymentOrder')
+      const res = await createOrder({ eventId: config.id, teamData: formData })
+      
+      setOrderData(res.data)
+      setOrderState('active')
+      const remaining = Math.max(0, Math.floor((res.data.expiresAt - Date.now()) / 1000))
+      setTimeLeft(remaining)
+    } catch (err) {
+      console.error(err)
+      setErrorMsg(err.message || 'Failed to create payment order. Try again.')
+      setOrderState('error')
     }
-    if (selected.size > MAX_SIZE_B) {
-      setFileError(`File too large (${(selected.size / 1024 / 1024).toFixed(1)} MB). Max allowed: ${MAX_SIZE_MB} MB.`)
-      return
-    }
-
-    setFile(selected)
-    const reader = new FileReader()
-    reader.onload = (e) => setPreview(e.target.result)
-    reader.readAsDataURL(selected)
   }
 
-  const upiLink = `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=SuccessSquad&am=${config.entryFee}&tn=${encodeURIComponent(teamName + '-BGMI')}&cu=INR`
+  // 2. Countdown Timer
+  useEffect(() => {
+    if (orderState !== 'active' || !orderData) return
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((orderData.expiresAt - Date.now()) / 1000))
+      setTimeLeft(remaining)
+      
+      if (remaining <= 0) {
+        clearInterval(interval)
+        if (orderState === 'active') {
+          handleExpire()
+        }
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [orderState, orderData])
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!file) { setFileError('Please attach your payment screenshot.'); return }
-    onSubmit(file)
+  // 3. Firestore Real-time Subscription
+  useEffect(() => {
+    if (orderState !== 'active' || !orderData) return
+    
+    const unsubscribe = onSnapshot(doc(db, 'pendingPayments', orderData.orderId), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        if (data.status === 'paid') {
+          setOrderState('paid')
+          // Auto-advance
+          onSubmit({ orderId: data.orderId, paymentId: data.paymentId })
+        } else if (data.status === 'expired' || data.status === 'failed') {
+          setOrderState('expired')
+        }
+      }
+    })
+    return () => unsubscribe()
+  }, [orderState, orderData, onSubmit])
+
+  // 4. Manual/Timer Expiry call
+  const handleExpire = async () => {
+    setOrderState('expired')
+    try {
+      const expireOrder = httpsCallable(functions, 'expireOrder')
+      await expireOrder({ orderId: orderData.orderId })
+    } catch (e) {
+      console.error('Failed to expire order explicitly:', e)
+    }
   }
 
   return (
-    <form className="reg-form" onSubmit={handleSubmit} noValidate>
+    <div className="reg-form">
       <h3 className="reg-step-title">Payment</h3>
 
-      {/* Order summary */}
       <div className="payment-summary">
         <div className="payment-summary-row">
           <span>Event</span>
@@ -82,93 +125,75 @@ export default function PaymentStep({
         </div>
       </div>
 
-      {/* QR Code */}
-      <div className="payment-qr-wrap">
-        <p className="payment-qr-label">Scan QR to pay via UPI</p>
-        <img
-          src={config.qrCodeImage}
-          alt={`UPI QR code for ${config.name} registration`}
-          className="payment-qr-img"
-          width="220"
-          height="220"
-        />
-        <p className="payment-qr-upiid">UPI ID: <code>{config.upiId}</code></p>
-      </div>
-
-      {/* UPI Deep Link (mobile) / note (desktop) */}
-      {isMobileDevice() ? (
-        <a
-          href={upiLink}
-          className="btn btn-primary reg-upi-btn"
-          id="upi-pay-btn"
-        >
-          📱 Pay ₹{config.entryFee} via UPI App
-        </a>
-      ) : (
-        <p className="payment-desktop-note">
-          💻 On desktop, please scan the QR code above using your UPI app on your phone.
-        </p>
-      )}
-
-      {/* Screenshot upload */}
-      <div className="form-group reg-upload-group">
-        <label htmlFor="payment-screenshot">
-          Payment Screenshot <span aria-hidden="true">*</span>
-          <span className="reg-upload-hint"> (JPG, PNG, WebP — max {MAX_SIZE_MB} MB)</span>
-        </label>
-
-        <div
-          className={`reg-upload-area ${file ? 'has-file' : ''}`}
-          onClick={() => fileInputRef.current?.click()}
-          onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          aria-label="Click to upload payment screenshot"
-        >
-          {preview ? (
-            <img src={preview} alt="Payment screenshot preview" className="reg-upload-preview" />
-          ) : (
-            <span className="reg-upload-placeholder">
-              📎 Click to attach screenshot
-            </span>
-          )}
+      {(orderState === 'initial' || orderState === 'creating' || orderState === 'error') && (
+        <div className="payment-unlock-wrap" style={{ textAlign: 'center', padding: '40px 0' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
+            Ready to pay? Generate a unique payment QR code. You will have 5 minutes to complete the transaction.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleUnlock}
+            disabled={orderState === 'creating'}
+          >
+            {orderState === 'creating' ? (
+              <><span className="reg-spinner" aria-hidden="true" /> Generating…</>
+            ) : (
+              'Unlock Payment QR 🔒'
+            )}
+          </button>
+          {errorMsg && <p className="reg-error" style={{ marginTop: 16 }}>{errorMsg}</p>}
         </div>
-
-        <input
-          ref={fileInputRef}
-          id="payment-screenshot"
-          type="file"
-          accept="image/*"
-          className="reg-upload-input-hidden"
-          aria-describedby={fileError ? 'err-screenshot' : undefined}
-          onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-        />
-
-        {fileError && <span id="err-screenshot" className="reg-error" role="alert">{fileError}</span>}
-      </div>
-
-      {/* Network/upload error from parent */}
-      {submitError && (
-        <p className="reg-error reg-error-network" role="alert">{submitError}</p>
       )}
 
-      <div className="reg-footer-actions">
-        <button type="button" className="btn btn-ghost" onClick={onBack} disabled={submitting}>
-          ← Back
-        </button>
-        <button
-          type="submit"
-          id="submit-payment-proof"
-          className="btn btn-primary"
-          disabled={!file || submitting}
-        >
-          {submitting ? (
-            <><span className="reg-spinner" aria-hidden="true" /> Submitting…</>
-          ) : (
-            'Submit Payment Proof →'
-          )}
+      {orderState === 'active' && orderData && (
+        <>
+          <div className="payment-active-box" style={{ textAlign: 'center', marginTop: 24 }}>
+            <div className={`countdown ${timeLeft < 60 ? 'countdown-urgent' : ''}`} style={{
+              fontSize: '2rem',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              color: timeLeft < 60 ? '#ef4444' : 'var(--accent)',
+              marginBottom: 16
+            }}>
+              {formatTime(timeLeft)}
+            </div>
+
+            <div className="payment-qr-wrap" style={{ display: 'inline-block', background: '#fff', padding: 12, borderRadius: 12, margin: '0 auto 16px' }}>
+              <QRCodeSVG value={orderData.upiIntentLink} size={200} />
+            </div>
+
+            {isMobileDevice() ? (
+              <a href={orderData.upiIntentLink} className="btn btn-primary reg-upi-btn" style={{ width: '100%', marginBottom: 12 }}>
+                📱 Pay ₹{orderData.amountINR} via UPI App
+              </a>
+            ) : (
+              <p className="payment-desktop-note">
+                💻 Scan the QR code using your phone's UPI app. Keep this tab open.
+              </p>
+            )}
+            
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 12 }}>
+              Waiting for confirmation from gateway... Do not close this window.
+            </p>
+          </div>
+        </>
+      )}
+
+      {orderState === 'expired' && (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <p style={{ color: '#ef4444', marginBottom: 16 }}>Payment window expired or failed.</p>
+          <button type="button" className="btn btn-primary" onClick={() => setOrderState('initial')}>
+            Try Again ↻
+          </button>
+        </div>
+      )}
+
+      <div className="reg-footer-actions" style={{ marginTop: 24 }}>
+        <button type="button" className="btn btn-ghost" onClick={onBack} disabled={orderState === 'creating' || orderState === 'active'}>
+          ← Back to Details
         </button>
       </div>
-    </form>
+    </div>
   )
 }

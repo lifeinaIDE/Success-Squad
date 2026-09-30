@@ -19,6 +19,7 @@ import { initializeApp, getApps } from 'firebase/app'
 import { getFirestore }            from 'firebase/firestore'
 import { getStorage }              from 'firebase/storage'
 import { getAuth }                 from 'firebase/auth'
+import { getFunctions }            from 'firebase/functions'
 
 const config = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -35,6 +36,7 @@ const isConfigured = Object.values(config).every(Boolean)
 let db      = null
 let storage = null
 let auth    = null
+let functions = null
 
 if (isConfigured) {
   try {
@@ -43,6 +45,7 @@ if (isConfigured) {
     db      = getFirestore(app)
     storage = getStorage(app)
     auth    = getAuth(app)
+    functions = getFunctions(app)
   } catch (err) {
     console.warn('[Firebase] Initialisation failed — registration features disabled.', err)
   }
@@ -53,4 +56,4 @@ if (isConfigured) {
   )
 }
 
-export { db, storage, auth }
+export { db, storage, auth, functions }
