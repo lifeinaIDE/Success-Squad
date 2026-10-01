@@ -33,9 +33,16 @@
 
 import { supabase } from './supabase.js'
 
+// Guard: throw a clear error if Supabase isn't configured yet
+function requireSupabase() {
+  if (!supabase) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.')
+  return supabase
+}
+
 // ── createPaymentOrder ───────────────────────────────────────────────────────
 export async function createPaymentOrder(eventId, teamData) {
-  const { data, error } = await supabase.functions.invoke('create-payment-order', {
+  const sb = requireSupabase()
+  const { data, error } = await sb.functions.invoke('create-payment-order', {
     body: { eventId, teamData },
   })
 
