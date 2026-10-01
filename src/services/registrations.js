@@ -1,159 +1,170 @@
 /**
- * src/services/registrations.js
+ * src/services/registrations.js  (Supabase edition)
  *
- * All Firestore + Storage operations for event registrations.
+ * All Supabase Postgres + Storage + Edge Function operations for registrations.
  *
- * Functions:
- *  createRegistration  — validates, uploads screenshot, generates unique Team ID,
- *                        writes Firestore doc. Returns the Team ID string.
- *  getRegistrationByTeamId — fetch a single registration for status lookup.
- *  markVerified        — admin action: sets status:"verified" + verifiedAt.
- *  listRegistrations   — admin action: fetch all (or per-event) registrations.
+ * Public API:
+ *  createPaymentOrder(eventId, teamData)
+ *    → invokes create-payment-order Edge Function
+ *    → returns { orderId, upiIntentLink, expiresAt, amountINR }
  *
- * Security model:
- *  - CREATE is public (guarded by Firestore rules + this code)
- *  - READ/UPDATE requires Firebase Auth (admin email whitelist — see firestore.rules)
+ *  subscribeToOrderStatus(orderId, onUpdate)
+ *    → Supabase Realtime subscription on pending_payments row
+ *    → returns unsubscribe function for useEffect cleanup
+ *
+ *  expireOrder(orderId)
+ *    → invokes expire-order Edge Function
+ *
+ *  getRegistrationByOrderId(orderId)
+ *    → fetches from registrations table by order_id (after payment confirmed)
+ *
+ *  getRegistrationByTeamId(teamId)
+ *    → fetches from registrations table by team_id (for status lookup page)
+ *
+ *  uploadScreenshot(teamId, eventId, file)
+ *    → uploads to Supabase Storage, updates registrations.screenshot_url
+ *
+ *  listRegistrations(eventId?)
+ *    → admin: fetch all registrations (optionally by event)
+ *
+ *  markVerified(id)
+ *    → admin: set status='verified', verified_at=now()
  */
 
-import {
-  collection,
-  doc,
-  addDoc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  updateDoc,
-  serverTimestamp,
-  runTransaction,
-} from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from './firebase.js'
+import { supabase } from './supabase.js'
 
-const REGISTRATIONS = 'registrations'
-const COUNTERS      = 'counters'
-
-// ── Unique Team ID generator ────────────────────────────────────────────────
-// Uses a Firestore transaction on a per-event counter doc to guarantee
-// uniqueness without requiring a sequential scan. Format: BGMI-00001
-
-async function generateTeamId(eventPrefix) {
-  const counterRef = doc(db, COUNTERS, eventPrefix)
-  const teamId = await runTransaction(db, async (tx) => {
-    const snap = await tx.get(counterRef)
-    const next = snap.exists() ? snap.data().count + 1 : 1
-    tx.set(counterRef, { count: next })
-    return `${eventPrefix}-${String(next).padStart(5, '0')}`
+// ── createPaymentOrder ───────────────────────────────────────────────────────
+export async function createPaymentOrder(eventId, teamData) {
+  const { data, error } = await supabase.functions.invoke('create-payment-order', {
+    body: { eventId, teamData },
   })
-  return teamId
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data // { orderId, upiIntentLink, expiresAt, amountINR }
 }
 
-// ── createConfirmedRegistration ───────────────────────────────────────────────
+// ── subscribeToOrderStatus ───────────────────────────────────────────────────
 /**
- * @param {string} eventId
- * @param {object} formData
- * @param {string} orderId
- * @param {string} paymentId
- * @returns {string} teamId
+ * Sets up a Supabase Realtime subscription on the pending_payments row.
+ * Fires onUpdate(newRow) whenever the row is updated.
+ * Returns a cleanup function — call it in useEffect return.
+ *
+ * @param {string}   orderId
+ * @param {Function} onUpdate — receives the updated row object
+ * @returns {Function} unsubscribe
  */
-export async function createConfirmedRegistration(eventId, formData, orderId, paymentId) {
-  const prefixMap = {
-    'bgmi-lec':      'BGMI',
-    'fflec':         'FFLEC',
-    'hackathon-24h': 'HACK',
-    'ipl-auction':   'IPL',
-    'startup-pitch': 'PITCH',
-    'mun':           'MUN',
+export function subscribeToOrderStatus(orderId, onUpdate) {
+  const channel = supabase
+    .channel(`order-status-${orderId}`)
+    .on(
+      'postgres_changes',
+      {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  'pending_payments',
+        filter: `order_id=eq.${orderId}`,
+      },
+      (payload) => {
+        onUpdate(payload.new)
+      }
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
   }
-  const prefix = prefixMap[eventId] ?? eventId.toUpperCase().slice(0, 6)
-  const teamId = await generateTeamId(prefix)
-
-  await addDoc(collection(db, REGISTRATIONS), {
-    eventId,
-    teamId,
-    orderId,
-    paymentId,
-    status: 'confirmed',
-    submittedAt: serverTimestamp(),
-    leaderName:  formData.leaderName,
-    leaderPhone: formData.leaderPhone,
-    leaderEmail: formData.leaderEmail,
-    teamName:    formData.teamName,
-    members: formData.members,
-  })
-
-  return teamId
 }
 
-// ── uploadScreenshotProof (Optional) ──────────────────────────────────────────
-export async function uploadScreenshotProof(teamId, eventId, screenshotFile) {
-  const storageRef = ref(
-    storage,
-    `payment-proofs/${eventId}/${Date.now()}_${screenshotFile.name}`
-  )
-  await uploadBytes(storageRef, screenshotFile)
-  const screenshotUrl = await getDownloadURL(storageRef)
+// ── expireOrder ──────────────────────────────────────────────────────────────
+export async function expireOrder(orderId) {
+  const { data, error } = await supabase.functions.invoke('expire-order', {
+    body: { orderId },
+  })
+  if (error) throw error
+  return data
+}
 
-  const q = query(
-    collection(db, REGISTRATIONS),
-    where('teamId', '==', teamId)
-  )
-  const snap = await getDocs(q)
-  if (!snap.empty) {
-    const docSnap = snap.docs[0]
-    await updateDoc(doc(db, REGISTRATIONS, docSnap.id), {
-      screenshotUrl
-    })
-  }
+// ── getRegistrationByOrderId ─────────────────────────────────────────────────
+/**
+ * Called by ConfirmationStep after the Realtime sub confirms 'paid'.
+ * The DB trigger has already inserted the registrations row by this point.
+ */
+export async function getRegistrationByOrderId(orderId) {
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('order_id', orderId)
+    .single()
+
+  if (error) throw error
+  return data
 }
 
 // ── getRegistrationByTeamId ──────────────────────────────────────────────────
-/**
- * Public read (validated by Firestore rules to only allow matching teamId).
- * Returns the registration document data or null if not found.
- * @param {string} teamId
- */
 export async function getRegistrationByTeamId(teamId) {
-  const q = query(
-    collection(db, REGISTRATIONS),
-    where('teamId', '==', teamId)
-  )
-  const snap = await getDocs(q)
-  if (snap.empty) return null
-  const docSnap = snap.docs[0]
-  return { id: docSnap.id, ...docSnap.data() }
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('team_id', teamId.toUpperCase())
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error // PGRST116 = 0 rows
+  return data ?? null
 }
 
-// ── markVerified ─────────────────────────────────────────────────────────────
-/**
- * Admin action — sets status:"verified" and records verifiedAt timestamp.
- * Firestore rules require an authenticated admin to call this.
- * @param {string} docId - Firestore document ID
- */
-export async function markVerified(docId) {
-  const ref = doc(db, REGISTRATIONS, docId)
-  await updateDoc(ref, {
-    status:     'verified',
-    verifiedAt: serverTimestamp(),
-  })
+// ── uploadScreenshot ─────────────────────────────────────────────────────────
+export async function uploadScreenshot(teamId, eventId, file) {
+  const path = `payment-proofs/${eventId}/${teamId}_${Date.now()}_${file.name}`
+
+  const { error: uploadErr } = await supabase.storage
+    .from('payment-proofs')
+    .upload(path, file, { upsert: true })
+
+  if (uploadErr) throw uploadErr
+
+  const { data: urlData } = supabase.storage
+    .from('payment-proofs')
+    .getPublicUrl(path)
+
+  const screenshotUrl = urlData.publicUrl
+
+  // Update the registrations row
+  const { error: updateErr } = await supabase
+    .from('registrations')
+    .update({ screenshot_url: screenshotUrl })
+    .eq('team_id', teamId)
+
+  if (updateErr) throw updateErr
+  return screenshotUrl
 }
 
-// ── listRegistrations ─────────────────────────────────────────────────────────
-/**
- * Admin action — fetch all registrations, optionally filtered by eventId.
- * Returns an array of { id, ...data } objects sorted by submittedAt desc.
- * @param {string|null} eventId - pass null to fetch all events
- */
+// ── listRegistrations (admin) ─────────────────────────────────────────────────
 export async function listRegistrations(eventId = null) {
-  let q = eventId
-    ? query(
-        collection(db, REGISTRATIONS),
-        where('eventId', '==', eventId),
-        orderBy('submittedAt', 'desc')
-      )
-    : query(collection(db, REGISTRATIONS), orderBy('submittedAt', 'desc'))
+  let query = supabase
+    .from('registrations')
+    .select('*')
+    .order('created_at', { ascending: false })
 
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  if (eventId) {
+    query = query.eq('event_id', eventId)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+// ── markVerified (admin) ──────────────────────────────────────────────────────
+export async function markVerified(id) {
+  const { error } = await supabase
+    .from('registrations')
+    .update({
+      status:      'verified',
+      verified_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) throw error
 }

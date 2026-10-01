@@ -5,77 +5,118 @@ Full 1:1 React 18 + Vite port of the Success Squad static site. All 7 pages shar
 
 ## Install & Run
 
-`
+```
 cd success-squad-react
 npm install
 npm run dev
-`
+```
 
-Dev server: http://localhost:5173/Success-Squad/
+Dev server: http://localhost:5173
 
 ## Build for Production
 
-`
+```
 npm run build
-`
+```
 
-Output in dist/
-
-## Deploy to GitHub Pages
-
-1. Install: 
-pm install --save-dev gh-pages
-2. Add to package.json scripts:
-   - "predeploy": "npm run build"
-   - "deploy": "gh-pages -d dist"
-3. vite.config.js already has: base: '/Success-Squad---EDC-/'
-4. Add public/404.html for SPA routing — it redirects unknown URLs to index.html via query string so React Router can handle the path.
-5. Run: 
-pm run deploy
+Output in `dist/`
 
 ## Project Structure
 
+```
 src/
-  main.jsx           — entry, imports style.css once
-  App.jsx            — BrowserRouter + Routes
-  styles/style.css   — global CSS (identical to original)
-  components/layout/ — Navbar, Footer, Layout
-  components/ui/     — FeaturedTeamCard, TeamCard, AlumniCard, PillarCard, EventCard, StartupCard, ValueItem
-  components/gallery/ — GalleryCarousel, MemoriesSection
-  pages/             — Home, About, Team, Events, Gallery, Startups, Contact, NotFound
-  hooks/             — useScrolled, useCounter, useScrollReveal, useLightbox, useDocumentTitle
-  data/              — navData, homeData, valuesData, teamData, eventsData, galleryData, startupsData
+  main.jsx             — entry, imports style.css once
+  App.jsx              — BrowserRouter + Routes
+  styles/style.css     — global CSS
+  components/layout/   — Navbar, Footer, Layout
+  components/events/   — EFestHero, RegistrationModal, steps/
+  components/gallery/  — GalleryCarousel, MemoriesSection
+  pages/               — Home, About, Team, Events, Gallery, Startups, Contact,
+                         RegistrationHub, StatusLookup, AdminDashboard, NotFound
+  services/
+    supabase.js        — Supabase client (URL + anon key from env)
+    registrations.js   — All DB/Edge Function/Storage operations
+  data/                — navData, homeData, teamData, eventConfigs, ...
 public/
-  images/            — team photos
-  Success Squad.jpg  — logo
+  images/              — team photos
+supabase/
+  migrations/          — 001_init.sql (schema, RLS, trigger, pg_cron)
+  functions/           — create-payment-order, razorpay-webhook, expire-order
+```
 
-## Razorpay Payment Gateway & Cloud Functions Setup
+---
 
-The E-Fest registration system uses Razorpay for verified UPI payments, backed by Firebase Cloud Functions.
+## Supabase Backend — Full Deployment Walkthrough
 
-**1. Razorpay Account Setup**
-- Sign up at Razorpay.com.
-- Use **Test Mode** for development (no KYC required).
-- Go live by submitting standard business KYC (flag this early to the organizing team).
-- In Test Mode, generate API keys: `rzp_test_...` and your secret.
+The E-Fest registration system uses **Supabase** (Postgres + Edge Functions + Realtime + Storage)
+and **Razorpay** for gateway-verified UPI payments.
 
-**2. Firebase Cloud Functions (Blaze Plan Required)**
-To make outbound network calls to Razorpay's API from Firebase Cloud Functions, your Firebase project **must** be on the Blaze (pay-as-you-go) plan.
-- At hackathon-scale traffic, this will cost exactly $0.00 (within generous free tiers).
-- The Blaze plan is merely a requirement to unlock outbound HTTP requests.
+> **Why Supabase instead of Firebase?**
+> Firebase Cloud Functions require the Blaze pay-as-you-go billing plan just to make outbound HTTP
+> calls to Razorpay. Supabase Edge Functions work on the free tier with zero restrictions.
 
-**3. Configure Environment Secrets**
-Do **NOT** put Razorpay secrets in `.env.local`. They must be set in the Firebase Cloud Functions environment:
-`firebase functions:config:set razorpay.id="YOUR_KEY_ID" razorpay.secret="YOUR_KEY_SECRET" razorpay.webhook_secret="YOUR_WEBHOOK_SECRET"`
+### 1. Create a Supabase project
+Go to https://supabase.com → New Project → pick region `ap-south-1` (Mumbai) for India.
 
-**4. Razorpay Webhook Registration**
-- In the Razorpay Dashboard → Settings → Webhooks.
-- Add a new webhook URL pointing to your deployed `razorpayWebhook` Cloud Function.
-- Events to check: `payment.captured`, `payment.failed`, `payment.authorized`.
-- Secret: enter the exact same string you saved to `razorpay.webhook_secret` in step 3.
+### 2. Copy credentials into `.env.local`
+From Supabase Dashboard → Project Settings → API:
+```
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGci...
+```
+Also add these to Vercel → Project Settings → Environment Variables.
 
-**5. Going Live**
-- Once KYC is approved, switch Razorpay to Live Mode.
-- Generate Live API keys.
-- Update Firebase config with the Live keys and a new Live Webhook Secret.
-- Update the webhook URL in the Razorpay Live Dashboard.
+### 3. Install Supabase CLI and link project
+```bash
+npm install -g supabase
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+```
+*(Find the project ref in Project Settings → General → Reference ID)*
+
+### 4. Run the database migration
+```bash
+supabase db push
+```
+Creates: `pending_payments`, `registrations`, `team_id_counters` tables, RLS policies,
+the `handle_payment_confirmed` DB trigger (auto-creates registration row when payment confirmed),
+pg_cron sweep job (marks expired orders every minute), and Realtime publication.
+
+### 5. Create Storage bucket
+Dashboard → Storage → New Bucket → name: `payment-proofs` → Public: **OFF**.
+
+### 6. Set secrets (NEVER in .env files)
+```bash
+supabase secrets set RAZORPAY_KEY_ID=rzp_test_TiN11aokzHSqdi
+supabase secrets set RAZORPAY_KEY_SECRET=YOUR_KEY_SECRET
+supabase secrets set RAZORPAY_WEBHOOK_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+```
+
+### 7. Deploy Edge Functions
+```bash
+supabase functions deploy create-payment-order
+supabase functions deploy razorpay-webhook
+supabase functions deploy expire-order
+```
+Webhook URL will be: `https://YOUR_REF.supabase.co/functions/v1/razorpay-webhook`
+
+### 8. Register webhook in Razorpay Dashboard
+Dashboard → Settings → Webhooks → Add New Webhook:
+- URL: the `razorpay-webhook` function URL from step 7
+- Secret: same string as `RAZORPAY_WEBHOOK_SECRET`
+- Events: `payment.captured`, `payment.authorized`, `payment.failed`
+
+### 9. Set up admin user
+Dashboard → Authentication → Users → Invite user → enter admin email.
+Add the same email to `ADMIN_EMAILS` in `src/pages/AdminDashboard.jsx`.
+
+### 10. Going Live with Razorpay
+Complete Razorpay KYC → get Live keys → `supabase secrets set` with Live keys → register new Live webhook in the Razorpay Live Dashboard.
+
+### Supabase Free Tier Limits
+| Resource | Free Limit | Expected at Event Scale |
+|---|---|---|
+| Edge Function invocations | 500K/month | ~3 per registration |
+| Realtime connections | 200 concurrent | Fine |
+| Database | 500 MB | ~1 MB per 1,000 teams |
+| Storage | 1 GB | Fine for screenshots |

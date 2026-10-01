@@ -1,22 +1,19 @@
 /**
- * PaymentStep — Step 2 of RegistrationModal (Revised).
+ * PaymentStep — Step 2 of RegistrationModal.
  *
  * Flow:
- *  - Initial state: "Unlock Payment QR" button.
- *  - On tap: calls Cloud Function `createPaymentOrder`, revealing QR + countdown.
- *  - Live countdown synced to server expiry.
- *  - Listens to `pendingPayments/{orderId}` via Firestore onSnapshot.
- *  - Automatically advances to Step 3 when status === 'paid'.
- *  - Expiry/Fail triggers `expireOrder` fallback and shows retry button.
+ *  1. Initial state: single "Unlock Payment QR" button.
+ *  2. On tap: calls createPaymentOrder Edge Function → reveals QR + countdown.
+ *  3. subscribeToOrderStatus sets up Supabase Realtime on the pending_payments row.
+ *  4. When status flips to 'paid' (written server-side by the webhook), auto-advances.
+ *  5. Countdown expiry calls expireOrder and shows retry state.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { doc, onSnapshot } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '../../../services/firebase.js'
+import { createPaymentOrder, subscribeToOrderStatus, expireOrder } from '../../../services/registrations.js'
 
-function isMobileDevice() {
+function isMobile() {
   return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
 }
 
@@ -26,171 +23,201 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export default function PaymentStep({
-  config,
-  teamName,
-  formData,
-  onSubmit,
-  onBack,
-}) {
-  // states: 'initial', 'creating', 'active', 'paid', 'expired', 'error'
-  const [orderState, setOrderState] = useState('initial')
-  const [orderData, setOrderData]   = useState(null)
-  const [timeLeft, setTimeLeft]     = useState(300)
-  const [errorMsg, setErrorMsg]     = useState('')
+// 'initial' | 'creating' | 'active' | 'expired' | 'error'
+export default function PaymentStep({ config, teamName, formData, onSubmit, onBack }) {
+  const [phase, setPhase]       = useState('initial')
+  const [orderData, setOrderData] = useState(null)  // { orderId, upiIntentLink, expiresAt, amountINR }
+  const [timeLeft, setTimeLeft]  = useState(300)
+  const [errorMsg, setErrorMsg]  = useState('')
 
-  // 1. Create Order
+  // ── 1. Create order ──────────────────────────────────────────
   const handleUnlock = async () => {
-    setOrderState('creating')
+    setPhase('creating')
     setErrorMsg('')
     try {
-      if (!functions) throw new Error('Cloud Functions not initialized')
-      const createOrder = httpsCallable(functions, 'createPaymentOrder')
-      const res = await createOrder({ eventId: config.id, teamData: formData })
-      
-      setOrderData(res.data)
-      setOrderState('active')
-      const remaining = Math.max(0, Math.floor((res.data.expiresAt - Date.now()) / 1000))
+      const result = await createPaymentOrder(config.id, formData)
+      setOrderData(result)
+      setPhase('active')
+      const remaining = Math.max(0, Math.floor((new Date(result.expiresAt).getTime() - Date.now()) / 1000))
       setTimeLeft(remaining)
     } catch (err) {
       console.error(err)
-      setErrorMsg(err.message || 'Failed to create payment order. Try again.')
-      setOrderState('error')
+      setErrorMsg(err?.message || 'Failed to create payment order. Please try again.')
+      setPhase('error')
     }
   }
 
-  // 2. Countdown Timer
+  // ── 2. Countdown timer (synced to server expiresAt) ──────────
   useEffect(() => {
-    if (orderState !== 'active' || !orderData) return
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.floor((orderData.expiresAt - Date.now()) / 1000))
+    if (phase !== 'active' || !orderData) return
+
+    const tick = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((new Date(orderData.expiresAt).getTime() - Date.now()) / 1000))
       setTimeLeft(remaining)
-      
       if (remaining <= 0) {
-        clearInterval(interval)
-        if (orderState === 'active') {
-          handleExpire()
-        }
+        clearInterval(tick)
+        handleTimerExpiry()
       }
     }, 1000)
-    return () => clearInterval(interval)
-  }, [orderState, orderData])
 
-  // 3. Firestore Real-time Subscription
+    return () => clearInterval(tick)
+  }, [phase, orderData])
+
+  // ── 3. Realtime subscription (Supabase) ──────────────────────
   useEffect(() => {
-    if (orderState !== 'active' || !orderData) return
-    
-    const unsubscribe = onSnapshot(doc(db, 'pendingPayments', orderData.orderId), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        if (data.status === 'paid') {
-          setOrderState('paid')
-          // Auto-advance
-          onSubmit({ orderId: data.orderId, paymentId: data.paymentId })
-        } else if (data.status === 'expired' || data.status === 'failed') {
-          setOrderState('expired')
-        }
+    if (phase !== 'active' || !orderData) return
+
+    const unsubscribe = subscribeToOrderStatus(orderData.orderId, (updatedRow) => {
+      if (updatedRow.status === 'paid') {
+        setPhase('paid')
+        // Auto-advance: pass orderId + paymentId to parent
+        onSubmit({ orderId: updatedRow.order_id, paymentId: updatedRow.razorpay_payment_id })
+      } else if (updatedRow.status === 'expired' || updatedRow.status === 'failed') {
+        setPhase('expired')
       }
     })
-    return () => unsubscribe()
-  }, [orderState, orderData, onSubmit])
 
-  // 4. Manual/Timer Expiry call
-  const handleExpire = async () => {
-    setOrderState('expired')
+    return unsubscribe
+  }, [phase, orderData, onSubmit])
+
+  // ── 4. Manual expiry (client countdown hits 0) ────────────────
+  const handleTimerExpiry = useCallback(async () => {
+    setPhase('expired')
+    if (!orderData) return
     try {
-      const expireOrder = httpsCallable(functions, 'expireOrder')
-      await expireOrder({ orderId: orderData.orderId })
+      await expireOrder(orderData.orderId)
     } catch (e) {
-      console.error('Failed to expire order explicitly:', e)
+      console.warn('expireOrder call failed:', e)
     }
-  }
+  }, [orderData])
+
+  // ── Render ────────────────────────────────────────────────────
+  const isUrgent = timeLeft < 60
 
   return (
     <div className="reg-form">
       <h3 className="reg-step-title">Payment</h3>
 
+      {/* Order summary — always visible */}
       <div className="payment-summary">
         <div className="payment-summary-row">
-          <span>Event</span>
-          <strong>{config.name}</strong>
+          <span>Event</span><strong>{config.name}</strong>
         </div>
         <div className="payment-summary-row">
-          <span>Team</span>
-          <strong>{teamName || '—'}</strong>
+          <span>Team</span><strong>{teamName || '—'}</strong>
         </div>
         <div className="payment-summary-row payment-summary-total">
-          <span>Amount</span>
-          <strong>₹{config.entryFee}</strong>
+          <span>Amount</span><strong>₹{config.entryFee}</strong>
         </div>
       </div>
 
-      {(orderState === 'initial' || orderState === 'creating' || orderState === 'error') && (
-        <div className="payment-unlock-wrap" style={{ textAlign: 'center', padding: '40px 0' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
-            Ready to pay? Generate a unique payment QR code. You will have 5 minutes to complete the transaction.
+      {/* ── INITIAL / ERROR state ── */}
+      {(phase === 'initial' || phase === 'creating' || phase === 'error') && (
+        <div style={{ textAlign: 'center', padding: '36px 0' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 20, maxWidth: 340, margin: '0 auto 20px' }}>
+            Generate a unique, time-limited QR code for this payment.
+            You'll have <strong>5 minutes</strong> to complete the transaction.
           </p>
           <button
             type="button"
             className="btn btn-primary"
             onClick={handleUnlock}
-            disabled={orderState === 'creating'}
+            disabled={phase === 'creating'}
+            id="unlock-payment-qr-btn"
           >
-            {orderState === 'creating' ? (
-              <><span className="reg-spinner" aria-hidden="true" /> Generating…</>
-            ) : (
-              'Unlock Payment QR 🔒'
-            )}
+            {phase === 'creating'
+              ? <><span className="reg-spinner" aria-hidden="true" /> Generating…</>
+              : '🔒 Unlock Payment QR'}
           </button>
-          {errorMsg && <p className="reg-error" style={{ marginTop: 16 }}>{errorMsg}</p>}
+          {errorMsg && <p className="reg-error" role="alert" style={{ marginTop: 16 }}>{errorMsg}</p>}
         </div>
       )}
 
-      {orderState === 'active' && orderData && (
-        <>
-          <div className="payment-active-box" style={{ textAlign: 'center', marginTop: 24 }}>
-            <div className={`countdown ${timeLeft < 60 ? 'countdown-urgent' : ''}`} style={{
-              fontSize: '2rem',
+      {/* ── ACTIVE state: QR + countdown ── */}
+      {phase === 'active' && orderData && (
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+
+          {/* Countdown */}
+          <div
+            aria-live="polite"
+            aria-label={`${formatTime(timeLeft)} remaining`}
+            style={{
+              fontSize: '2.4rem',
               fontFamily: 'var(--font-display)',
               fontWeight: 800,
-              color: timeLeft < 60 ? '#ef4444' : 'var(--accent)',
-              marginBottom: 16
-            }}>
-              {formatTime(timeLeft)}
-            </div>
-
-            <div className="payment-qr-wrap" style={{ display: 'inline-block', background: '#fff', padding: 12, borderRadius: 12, margin: '0 auto 16px' }}>
-              <QRCodeSVG value={orderData.upiIntentLink} size={200} />
-            </div>
-
-            {isMobileDevice() ? (
-              <a href={orderData.upiIntentLink} className="btn btn-primary reg-upi-btn" style={{ width: '100%', marginBottom: 12 }}>
-                📱 Pay ₹{orderData.amountINR} via UPI App
-              </a>
-            ) : (
-              <p className="payment-desktop-note">
-                💻 Scan the QR code using your phone's UPI app. Keep this tab open.
-              </p>
-            )}
-            
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 12 }}>
-              Waiting for confirmation from gateway... Do not close this window.
-            </p>
+              color: isUrgent ? '#ef4444' : 'var(--accent)',
+              marginBottom: 20,
+              transition: 'color 0.5s ease',
+            }}
+          >
+            {formatTime(timeLeft)}
           </div>
-        </>
+
+          {/* QR — unique per order, never a static image */}
+          <div style={{
+            display: 'inline-block',
+            background: '#fff',
+            padding: 14,
+            borderRadius: 14,
+            marginBottom: 20,
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.1)',
+          }}>
+            <QRCodeSVG
+              value={orderData.upiIntentLink}
+              size={200}
+              level="M"
+              aria-label="UPI payment QR code"
+            />
+          </div>
+
+          {/* Mobile: UPI deep link as primary */}
+          {isMobile() ? (
+            <a
+              href={orderData.upiIntentLink}
+              className="btn btn-primary reg-upi-btn"
+              style={{ display: 'block', marginBottom: 12 }}
+              id="upi-pay-btn"
+            >
+              📱 Pay ₹{orderData.amountINR} via UPI App
+            </a>
+          ) : (
+            <p className="payment-desktop-note" style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+              💻 Scan the QR code from your phone's UPI app. Keep this tab open.
+            </p>
+          )}
+
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 14 }}>
+            {isUrgent
+              ? '⚠️ Payment window closing soon. Complete the transaction now.'
+              : 'Waiting for payment confirmation… Do not close this window.'}
+          </p>
+        </div>
       )}
 
-      {orderState === 'expired' && (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <p style={{ color: '#ef4444', marginBottom: 16 }}>Payment window expired or failed.</p>
-          <button type="button" className="btn btn-primary" onClick={() => setOrderState('initial')}>
-            Try Again ↻
+      {/* ── EXPIRED / FAILED state ── */}
+      {phase === 'expired' && (
+        <div style={{ textAlign: 'center', padding: '36px 0' }}>
+          <p style={{ color: '#ef4444', marginBottom: 16, fontSize: '1rem' }}>
+            Payment window expired or transaction failed.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => { setPhase('initial'); setOrderData(null); setTimeLeft(300) }}
+            id="retry-payment-btn"
+          >
+            ↻ Try Again
           </button>
         </div>
       )}
 
       <div className="reg-footer-actions" style={{ marginTop: 24 }}>
-        <button type="button" className="btn btn-ghost" onClick={onBack} disabled={orderState === 'creating' || orderState === 'active'}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={onBack}
+          disabled={phase === 'creating' || phase === 'active'}
+        >
           ← Back to Details
         </button>
       </div>

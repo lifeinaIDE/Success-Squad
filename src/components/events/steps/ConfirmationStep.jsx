@@ -1,55 +1,67 @@
 /**
- * ConfirmationStep — Step 3 of RegistrationModal (Revised).
+ * ConfirmationStep — Step 3 of RegistrationModal.
  *
- * Flow:
- *  - On mount, calls createConfirmedRegistration to get the unique Team ID.
- *  - Displays Team ID prominently.
- *  - Renders ReceiptPlaceholder.
- *  - Offers an optional screenshot upload (just updates the doc with screenshotUrl).
+ * Triggered automatically when the Realtime subscription in PaymentStep
+ * detects status='paid'. At this point:
+ *  1. The DB trigger has already inserted the registrations row.
+ *  2. We fetch it by order_id to get the generated team_id.
+ *  3. Display Team ID, receipt, and offer optional screenshot upload.
  */
 
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { createConfirmedRegistration, uploadScreenshotProof } from '../../../services/registrations.js'
+import { getRegistrationByOrderId, uploadScreenshot } from '../../../services/registrations.js'
 
 export default function ConfirmationStep({ config, formData, paymentResult, onClose }) {
-  const [teamId, setTeamId] = useState(null)
-  const [error, setError] = useState('')
-  const [screenshot, setScreenshot] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploaded, setUploaded] = useState(false)
-  
+  // paymentResult = { orderId, paymentId } — passed from PaymentStep via onSubmit
+  const [registration, setRegistration] = useState(null)
+  const [error, setError]               = useState('')
+  const [uploading, setUploading]       = useState(false)
+  const [uploaded, setUploaded]         = useState(false)
   const fileInputRef = useRef(null)
 
+  // Fetch the registration row (created by DB trigger)
   useEffect(() => {
-    if (!formData || !paymentResult) return
+    if (!paymentResult?.orderId) return
     let mounted = true
-    
-    // Create the final registration doc
-    createConfirmedRegistration(config.id, formData, paymentResult.orderId, paymentResult.paymentId)
-      .then(id => {
-        if (mounted) setTeamId(id)
-      })
-      .catch(err => {
-        console.error(err)
-        if (mounted) setError('Payment was successful, but failed to generate Team ID. Please contact support with your Payment ID: ' + paymentResult.paymentId)
-      })
-      
-    return () => { mounted = false }
-  }, [config.id, formData, paymentResult])
 
-  const handleFile = async (e) => {
+    // Poll briefly — the trigger fires async, so give it up to 3 seconds
+    let attempts = 0
+    const fetch = async () => {
+      try {
+        const reg = await getRegistrationByOrderId(paymentResult.orderId)
+        if (mounted) {
+          if (reg) {
+            setRegistration(reg)
+          } else if (attempts < 6) {
+            attempts++
+            setTimeout(fetch, 500)  // retry every 500ms for up to 3s
+          } else {
+            setError(
+              'Payment confirmed! But registration record is taking longer than expected. ' +
+              'Contact support with Payment ID: ' + paymentResult.paymentId
+            )
+          }
+        }
+      } catch (err) {
+        if (mounted) setError('Payment confirmed. Failed to load registration: ' + err.message)
+      }
+    }
+    fetch()
+
+    return () => { mounted = false }
+  }, [paymentResult])
+
+  const handleScreenshotUpload = async (e) => {
     const file = e.target.files?.[0]
-    if (!file || !teamId) return
-    
+    if (!file || !registration?.team_id) return
     setUploading(true)
     try {
-      await uploadScreenshotProof(teamId, config.id, file)
-      setScreenshot(file)
+      await uploadScreenshot(registration.team_id, config.id, file)
       setUploaded(true)
     } catch (err) {
       console.error(err)
-      alert('Failed to upload screenshot. Not required, so you can ignore this.')
+      alert('Screenshot upload failed — this is optional and does not affect your registration.')
     } finally {
       setUploading(false)
     }
@@ -58,94 +70,111 @@ export default function ConfirmationStep({ config, formData, paymentResult, onCl
   if (error) {
     return (
       <div className="reg-confirmation">
-        <p className="reg-error" style={{ fontSize: '1rem' }}>{error}</p>
+        <p className="reg-error" style={{ fontSize: '0.95rem', maxWidth: 400 }}>{error}</p>
+        <button className="btn btn-ghost" style={{ marginTop: 24 }} onClick={onClose}>Close</button>
       </div>
     )
   }
 
-  if (!teamId) {
+  if (!registration) {
     return (
-      <div className="reg-confirmation" style={{ padding: '60px 0' }}>
-        <span className="reg-spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
-        <p style={{ marginTop: 16, color: 'var(--text-muted)' }}>Finalizing registration...</p>
+      <div className="reg-confirmation" style={{ padding: '60px 0', gap: 16 }}>
+        <span className="reg-spinner" style={{ width: 32, height: 32, borderWidth: 3 }} aria-label="Loading" />
+        <p style={{ color: 'var(--text-muted)' }}>Finalising your registration…</p>
       </div>
     )
   }
+
+  const teamName    = registration.team_data?.teamName ?? formData?.teamName ?? '—'
+  const confirmedAt = registration.created_at
+    ? new Date(registration.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—'
 
   return (
     <div className="reg-confirmation" aria-live="polite">
       <div className="reg-confirmation-icon" aria-hidden="true">🎉</div>
+      <h3 className="reg-step-title">You're Registered!</h3>
 
-      <h3 className="reg-step-title">Registration Confirmed!</h3>
-
-      <div className="reg-teamid-box" aria-label={`Your Team ID is ${teamId}`}>
+      {/* Team ID — primary takeaway */}
+      <div className="reg-teamid-box" aria-label={`Your Team ID is ${registration.team_id}`}>
         <span className="reg-teamid-label">Your Team ID</span>
-        <span className="reg-teamid-value" id="confirmed-team-id">{teamId}</span>
+        <span className="reg-teamid-value" id="confirmed-team-id">{registration.team_id}</span>
         <button
           className="reg-teamid-copy btn btn-ghost"
-          onClick={() => navigator.clipboard?.writeText(teamId)}
+          onClick={() => navigator.clipboard?.writeText(registration.team_id)}
           aria-label="Copy Team ID to clipboard"
         >
           Copy
         </button>
       </div>
 
-      <div style={{ marginTop: 24, textAlign: 'left', width: '100%', background: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
-        <h4 style={{ marginBottom: 12, fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Payment Receipt</h4>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.9rem' }}>
-          <span style={{ color: 'var(--text-muted)' }}>Event:</span> <strong>{config.name}</strong>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.9rem' }}>
-          <span style={{ color: 'var(--text-muted)' }}>Team:</span> <strong>{formData.teamName}</strong>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.9rem' }}>
-          <span style={{ color: 'var(--text-muted)' }}>Amount Paid:</span> <strong>₹{config.entryFee}</strong>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-          <span style={{ color: 'var(--text-muted)' }}>Payment ID:</span> 
-          <code style={{ fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: 4 }}>{paymentResult.paymentId}</code>
-        </div>
+      {/* ── Receipt Placeholder ── swap this block with real branding later ── */}
+      <div className="receipt-placeholder" style={{
+        marginTop: 24, width: '100%', textAlign: 'left',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid var(--border)',
+        borderRadius: 14, padding: 20,
+      }}>
+        <p style={{
+          fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 2,
+          color: 'var(--text-muted)', marginBottom: 14
+        }}>
+          Payment Receipt · E-Fest '26
+        </p>
+
+        {[
+          ['Team ID',    registration.team_id],
+          ['Team Name',  teamName],
+          ['Event',      config.name],
+          ['Amount',     `₹${config.entryFee}`],
+          ['Payment ID', paymentResult.paymentId],
+          ['Date',       confirmedAt],
+        ].map(([label, value]) => (
+          <div key={label} style={{
+            display: 'flex', justifyContent: 'space-between',
+            marginBottom: 10, fontSize: '0.88rem',
+          }}>
+            <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+            <strong style={{ maxWidth: '55%', textAlign: 'right', wordBreak: 'break-all' }}>
+              {value}
+            </strong>
+          </div>
+        ))}
       </div>
 
-      <div style={{ marginTop: 24, width: '100%', textAlign: 'left' }}>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-          <strong>Optional:</strong> Attach your payment screenshot for your own records. This is not required — your payment is already verified.
+      {/* Optional screenshot upload */}
+      <div style={{ marginTop: 20, width: '100%' }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+          <strong>Optional:</strong> Attach your payment screenshot for your own records —
+          not required, your payment is already verified by the gateway.
         </p>
-        
         {!uploaded ? (
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button 
-              className="btn btn-ghost" 
+          <>
+            <button
+              className="btn btn-ghost"
+              style={{ padding: '8px 18px', fontSize: '0.85rem' }}
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              style={{ padding: '8px 16px', fontSize: '0.85rem' }}
             >
-              {uploading ? 'Uploading...' : '📎 Attach Screenshot'}
+              {uploading ? 'Uploading…' : '📎 Attach Screenshot'}
             </button>
-            <input 
-              ref={fileInputRef} 
-              type="file" 
-              accept="image/*" 
-              style={{ display: 'none' }} 
-              onChange={handleFile} 
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleScreenshotUpload}
             />
-          </div>
+          </>
         ) : (
           <p style={{ color: '#22c55e', fontSize: '0.85rem' }}>✅ Screenshot attached.</p>
         )}
       </div>
 
-      <div className="reg-footer-actions" style={{ justifyContent: 'center', width: '100%', marginTop: 32 }}>
-        <button className="btn btn-ghost" onClick={onClose}>
-          Close
-        </button>
-        <Link
-          to="/status"
-          className="btn btn-primary"
-          onClick={onClose}
-          id="check-status-link"
-        >
-          View Dashboard →
+      <div className="reg-footer-actions" style={{ marginTop: 32, justifyContent: 'center', width: '100%' }}>
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <Link to="/status" className="btn btn-primary" onClick={onClose} id="view-status-link">
+          View Status →
         </Link>
       </div>
     </div>

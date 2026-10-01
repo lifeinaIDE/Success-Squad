@@ -1,25 +1,22 @@
 /**
- * AdminDashboard.jsx — Protected admin route.
+ * AdminDashboard.jsx — Protected admin route (Supabase Auth edition).
  *
- * Authentication: Firebase Auth email/password.
- * Only emails in ADMIN_EMAILS set are allowed past the login screen.
- * Route path is internal-only — NOT linked from nav/footer.
+ * Authentication: Supabase Auth email/password.
+ * Only emails in ADMIN_EMAILS are allowed past the login screen.
  *
  * Features:
- *  - Login form (email + password)
+ *  - Login form (email + password via Supabase Auth)
  *  - Table of all registrations, filterable by event + status
- *  - Click row → detail drawer with screenshot + "Mark Verified" button
+ *  - Click row → detail drawer with optional screenshot + "Mark Verified" button
  *  - "Mark Verified" calls markVerified(), updates row live
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
-import { auth }               from '../services/firebase.js'
+import { supabase }    from '../services/supabase.js'
 import { listRegistrations, markVerified } from '../services/registrations.js'
-import { efestEvents }        from '../data/eventConfigs.js'
+import { efestEvents } from '../data/eventConfigs.js'
 
-// Allowlisted admin emails — add your admin email(s) here.
-// For stricter gating, move this to a Firestore "admins" collection.
+// Allowlisted admin emails — add yours here.
 const ADMIN_EMAILS = new Set([
   'admin@successsquad.in',
   // add more as needed
@@ -68,25 +65,29 @@ function LoginForm({ onLogin, error }) {
 // ── Detail Drawer ────────────────────────────────────────────────────────────
 function DetailDrawer({ reg, onClose, onVerify, verifying }) {
   if (!reg) return null
+  const members = reg.team_data?.members ?? []
   return (
     <div className="admin-drawer-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <aside className="admin-drawer" role="dialog" aria-label="Registration detail">
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-        <h3 className="admin-drawer-title">{reg.teamName}</h3>
-        <p className="admin-drawer-meta">Team ID: <strong>{reg.teamId}</strong></p>
-        <p className="admin-drawer-meta">Event: <strong>{reg.eventId}</strong></p>
+        <h3 className="admin-drawer-title">{reg.team_data?.teamName ?? '—'}</h3>
+        <p className="admin-drawer-meta">Team ID: <strong>{reg.team_id}</strong></p>
+        <p className="admin-drawer-meta">Event: <strong>{reg.event_id}</strong></p>
         <p className="admin-drawer-meta">Status: <strong className={`status-badge status-${reg.status}`}>{reg.status}</strong></p>
-        <p className="admin-drawer-meta">Leader: {reg.leaderName} · {reg.leaderPhone} · {reg.leaderEmail}</p>
+        <p className="admin-drawer-meta">
+          Leader: {reg.team_data?.leaderName} · {reg.team_data?.leaderPhone} · {reg.team_data?.leaderEmail}
+        </p>
+        <p className="admin-drawer-meta">Payment ID: <code style={{ fontSize: '0.8rem' }}>{reg.razorpay_payment_id}</code></p>
 
         <h4 style={{ marginTop: 20, marginBottom: 8 }}>Members</h4>
-        {(reg.members ?? []).map((m, i) => (
-          <p key={i} className="admin-drawer-meta">M{i+2}: {m.name} — {m.email}</p>
+        {members.map((m, i) => (
+          <p key={i} className="admin-drawer-meta">M{i + 2}: {m.name} — {m.email}</p>
         ))}
 
         <h4 style={{ marginTop: 20, marginBottom: 8 }}>Payment Screenshot</h4>
-        {reg.screenshotUrl
-          ? <a href={reg.screenshotUrl} target="_blank" rel="noopener noreferrer">
-              <img src={reg.screenshotUrl} alt="Payment proof" className="admin-screenshot" />
+        {reg.screenshot_url
+          ? <a href={reg.screenshot_url} target="_blank" rel="noopener noreferrer">
+              <img src={reg.screenshot_url} alt="Payment proof" className="admin-screenshot" />
             </a>
           : <p className="admin-drawer-meta" style={{ color: 'var(--text-muted)' }}>No screenshot uploaded.</p>
         }
@@ -103,7 +104,9 @@ function DetailDrawer({ reg, onClose, onVerify, verifying }) {
           </button>
         )}
         {reg.status === 'verified' && (
-          <p className="reg-confirmation-note" style={{ marginTop: 20 }}>✅ Verified on {reg.verifiedAt?.toDate?.()?.toLocaleDateString() ?? '—'}</p>
+          <p className="reg-confirmation-note" style={{ marginTop: 20 }}>
+            ✅ Verified on {reg.verified_at ? new Date(reg.verified_at).toLocaleDateString() : '—'}
+          </p>
         )}
       </aside>
     </div>
@@ -112,22 +115,40 @@ function DetailDrawer({ reg, onClose, onVerify, verifying }) {
 
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [user, setUser]             = useState(undefined) // undefined = loading
-  const [authError, setAuthError]   = useState('')
-  const [regs, setRegs]             = useState([])
-  const [loading, setLoading]       = useState(false)
+  const [user, setUser]               = useState(undefined)  // undefined = loading
+  const [authError, setAuthError]     = useState('')
+  const [regs, setRegs]               = useState([])
+  const [loading, setLoading]         = useState(false)
   const [filterEvent, setFilterEvent] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-  const [selected, setSelected]     = useState(null)
-  const [verifying, setVerifying]   = useState(false)
+  const [selected, setSelected]       = useState(null)
+  const [verifying, setVerifying]     = useState(false)
 
-  // Auth listener
+  // ── Auth listener (Supabase) ──────────────────────────────────
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (u && ADMIN_EMAILS.has(u.email)) setUser(u)
-      else { setUser(null); if (u) signOut(auth) }
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user ?? null
+      if (u && ADMIN_EMAILS.has(u.email)) {
+        setUser(u)
+      } else {
+        setUser(null)
+        if (u) supabase.auth.signOut()
+      }
     })
-    return unsub
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null
+      if (u && ADMIN_EMAILS.has(u.email)) {
+        setUser(u)
+      } else {
+        setUser(null)
+        if (u) supabase.auth.signOut()
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   // Load registrations when logged in
@@ -142,19 +163,16 @@ export default function AdminDashboard() {
 
   const handleLogin = async (email, password) => {
     setAuthError('')
-    try {
-      await signInWithEmailAndPassword(auth, email, password)
-    } catch {
-      setAuthError('Invalid email or password.')
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) setAuthError('Invalid email or password.')
   }
 
-  const handleVerify = useCallback(async (docId) => {
+  const handleVerify = useCallback(async (id) => {
     setVerifying(true)
     try {
-      await markVerified(docId)
-      setRegs((prev) => prev.map((r) => r.id === docId ? { ...r, status: 'verified' } : r))
-      setSelected((s) => s?.id === docId ? { ...s, status: 'verified' } : s)
+      await markVerified(id)
+      setRegs((prev) => prev.map((r) => r.id === id ? { ...r, status: 'verified', verified_at: new Date().toISOString() } : r))
+      setSelected((s) => s?.id === id ? { ...s, status: 'verified' } : s)
     } catch {
       alert('Failed to mark verified. Check your connection.')
     } finally {
@@ -162,15 +180,10 @@ export default function AdminDashboard() {
     }
   }, [])
 
-  // Loading auth state
   if (user === undefined) return <div className="admin-loading">Loading…</div>
-
-  // Not logged in
   if (!user) return <LoginForm onLogin={handleLogin} error={authError} />
 
-  const filtered = regs.filter((r) =>
-    (!filterStatus || r.status === filterStatus)
-  )
+  const filtered = regs.filter((r) => !filterStatus || r.status === filterStatus)
 
   return (
     <div className="admin-wrap">
@@ -178,39 +191,27 @@ export default function AdminDashboard() {
         <h1 className="admin-heading">Registrations</h1>
         <div className="admin-topbar-right">
           <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{user.email}</span>
-          <button className="btn btn-ghost" onClick={() => signOut(auth)} style={{ padding: '8px 16px' }}>
+          <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()} style={{ padding: '8px 16px' }}>
             Sign Out
           </button>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="admin-filters">
-        <select
-          value={filterEvent}
-          onChange={(e) => setFilterEvent(e.target.value)}
-          className="admin-filter-select"
-          aria-label="Filter by event"
-        >
+        <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="admin-filter-select" aria-label="Filter by event">
           <option value="">All Events</option>
           {efestEvents.map((e) => (
             <option key={e.id} value={e.id}>{e.name}</option>
           ))}
         </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="admin-filter-select"
-          aria-label="Filter by status"
-        >
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="admin-filter-select" aria-label="Filter by status">
           <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
           <option value="verified">Verified</option>
         </select>
         <span className="admin-count">{filtered.length} registration{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
-      {/* Table */}
       {loading ? (
         <p style={{ color: 'var(--text-muted)', padding: '40px 0' }}>Loading registrations…</p>
       ) : filtered.length === 0 ? (
@@ -220,12 +221,8 @@ export default function AdminDashboard() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Team ID</th>
-                <th>Team Name</th>
-                <th>Event</th>
-                <th>Leader</th>
-                <th>Status</th>
-                <th>Date</th>
+                <th>Team ID</th><th>Team Name</th><th>Event</th>
+                <th>Leader</th><th>Status</th><th>Date</th>
               </tr>
             </thead>
             <tbody>
@@ -236,15 +233,15 @@ export default function AdminDashboard() {
                   onClick={() => setSelected(r)}
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && setSelected(r)}
-                  aria-label={`View details for ${r.teamName}`}
+                  aria-label={`View details for ${r.team_data?.teamName}`}
                 >
-                  <td><code>{r.teamId}</code></td>
-                  <td>{r.teamName}</td>
-                  <td>{r.eventId}</td>
-                  <td>{r.leaderName}</td>
+                  <td><code>{r.team_id}</code></td>
+                  <td>{r.team_data?.teamName ?? '—'}</td>
+                  <td>{r.event_id}</td>
+                  <td>{r.team_data?.leaderName ?? '—'}</td>
                   <td><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    {r.submittedAt?.toDate?.()?.toLocaleDateString() ?? '—'}
+                    {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
                   </td>
                 </tr>
               ))}
