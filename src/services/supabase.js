@@ -28,8 +28,8 @@ if (supabaseUrl && supabaseAnon) {
   }
 } else {
   console.warn(
-    '[Supabase] Missing env vars — payment/registration features disabled.\n' +
-    'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel project settings.'
+    '[Supabase] Missing environment variables — payment/registration features disabled.\n' +
+    'Please verify VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel.'
   )
 }
 
