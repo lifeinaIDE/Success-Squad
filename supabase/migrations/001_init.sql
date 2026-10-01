@@ -164,16 +164,22 @@ create trigger on_payment_confirmed
 alter publication supabase_realtime add table public.pending_payments;
 
 -- ── Scheduled sweep: expire stale pending_payments ─────────────
--- Requires pg_cron (enabled by default on Supabase Postgres).
--- This runs every minute and marks any overdue orders as 'expired'.
--- You can also enable this from Supabase Dashboard → Database → Cron Jobs.
-select cron.schedule(
-  'expire-stale-payments',        -- job name
-  '* * * * *',                    -- every minute
-  $$
-    update public.pending_payments
-    set status = 'expired'
-    where status = 'pending'
-      and expires_at < now();
-  $$
-);
+-- pg_cron is NOT enabled by default. Set up the sweep manually:
+--
+-- STEP 1: Enable pg_cron in Supabase Dashboard:
+--   Database → Extensions → search "pg_cron" → Enable
+--
+-- STEP 2: After enabling, run this SQL in the SQL Editor:
+--   select cron.schedule(
+--     'expire-stale-payments',
+--     '* * * * *',
+--     $$
+--       update public.pending_payments
+--       set status = 'expired'
+--       where status = 'pending'
+--         and expires_at < now();
+--     $$
+--   );
+--
+-- NOTE: This sweep is a safety net only. The expire-order Edge Function
+-- called by the client when the countdown hits 0 handles the primary case.
