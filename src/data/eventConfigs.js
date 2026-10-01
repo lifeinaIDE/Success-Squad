@@ -18,7 +18,7 @@ export const eventConfigs = {
     tagline:      'Dominate the battleground. Squad up and compete.',
     teamSize:     4,          // 1 leader + 3 members
     entryFee:     199,        // ₹ per team
-    upiId:        'successsquad@upi',   // replace with real UPI ID
+    upiId:        '9404337568@upi',
     qrCodeImage:  '/images/bgmi-upi-qr.png', // add QR image to /public/images/
     comingSoon:   false,
     fields: {

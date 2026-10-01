@@ -105,7 +105,7 @@ serve(async (req) => {
     }
 
     // ── Build UPI intent deep link (unique per order) ─────────
-    const upiId       = 'successsquad@upi'   // replace with real UPI VPA
+    const upiId       = '9404337568@upi'
     const upiIntentLink =
       `upi://pay?pa=${encodeURIComponent(upiId)}` +
       `&pn=${encodeURIComponent('Success Squad E-Fest')}` +
