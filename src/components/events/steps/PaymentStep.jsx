@@ -10,7 +10,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
 import { createPaymentOrder, subscribeToOrderStatus, expireOrder } from '../../../services/registrations.js'
 
 function isMobile() {
@@ -153,7 +152,7 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
             {formatTime(timeLeft)}
           </div>
 
-          {/* QR — unique per order, never a static image */}
+          {/* QR — Razorpay-hosted tracked image (fires webhook on scan+pay) */}
           <div style={{
             display: 'inline-block',
             background: '#fff',
@@ -162,12 +161,20 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
             marginBottom: 20,
             boxShadow: '0 0 0 1px rgba(255,255,255,0.1)',
           }}>
-            <QRCodeSVG
-              value={orderData.upiIntentLink}
-              size={200}
-              level="M"
-              aria-label="UPI payment QR code"
-            />
+            {orderData.qrImageUrl ? (
+              <img
+                src={orderData.qrImageUrl}
+                alt="UPI payment QR code"
+                width={200}
+                height={200}
+                style={{ display: 'block' }}
+              />
+            ) : (
+              // Fallback: plain UPI QR if Razorpay QR creation failed
+              <div style={{ width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#666', textAlign: 'center', padding: 8 }}>
+                QR unavailable.<br />Use the Pay button below.
+              </div>
+            )}
           </div>
 
           {/* Mobile: UPI deep link as primary */}
