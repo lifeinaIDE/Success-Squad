@@ -128,11 +128,14 @@ export default function Home() {
       </section>
 
       {/* MARQUEE */}
-      <div className="marquee-wrap">
+      <div className="marquee-wrap" aria-hidden="true">
         <div className="marquee-track">
-          {[...MARQUEE_WORDS, ...MARQUEE_WORDS].map((word, i) => (
-            // Double list for seamless loop; index as key is stable for static array
-            <span key={`${word}-${i}`}>{word}</span>
+          {/* Quadruple the words so the track is always wider than any screen */}
+          {[...MARQUEE_WORDS, ...MARQUEE_WORDS, ...MARQUEE_WORDS, ...MARQUEE_WORDS].map((word, i) => (
+            <span key={i}>
+              {word}
+              <span className="dot" aria-hidden="true"> ·</span>
+            </span>
           ))}
         </div>
       </div>
