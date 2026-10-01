@@ -43,10 +43,6 @@ export default function Home() {
 
         <div className="hero-columns">
           <div className="hero-content">
-            <div className="hero-badge">
-              <span className="badge-dot" />
-              Entrepreneurship Development Cell
-            </div>
             <h1 className="hero-title">
               <span className="line-reveal">From Vision</span>
               <span className="line-reveal delay-1">to <em>Venture.</em></span>
@@ -62,15 +58,26 @@ export default function Home() {
           </div>
 
           <div className="hero-journey" aria-hidden="true">
-            <svg className="journey-svg" viewBox="0 0 380 480" preserveAspectRatio="xMidYMid meet">
-              <path
-                className="journey-path"
-                d="M57,422 C67.77,406.07 99.43,358.33 121.6,326.4 C143.77,294.47 167.2,262.4 190,230.4 C212.8,198.4 236.23,166.4 258.4,134.4 C280.57,102.4 312.23,54.4 323,38.4"
-              />
+            <svg className="journey-svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+              <circle cx="200" cy="200" r="170" className="journey-outer-ring" />
+              <circle cx="200" cy="200" r="135" className="journey-path" />
+              <circle cx="200" cy="200" r="85" className="journey-inner-ring" />
             </svg>
 
+            {/* Orbiting particle */}
             <div className="journey-particle" />
 
+            {/* Glowing Central Venture Core */}
+            <div className="journey-center">
+              <div className="center-pulse pulse-1" />
+              <div className="center-pulse pulse-2" />
+              <div className="center-core">
+                <span className="center-icon">🚀</span>
+                <span className="center-text">VENTURE</span>
+              </div>
+            </div>
+
+            {/* 5 Symmetrical Orbiting Nodes */}
             <div className="journey-node node-idea">
               <span className="node-icon">💡</span>
               <span className="node-label">Idea</span>
@@ -92,19 +99,10 @@ export default function Home() {
               <span className="node-label">Venture</span>
             </div>
 
-            <div className="journey-gather">
-              <span className="gather-dot gd-1" />
-              <span className="gather-dot gd-2" />
-              <span className="gather-dot gd-3" />
-              <span className="gather-dot gd-4" />
-              <span className="gather-dot gd-5" />
-            </div>
-
-            <div className="journey-rocket">🚀</div>
-
             <span className="journey-spark spark-1" />
             <span className="journey-spark spark-2" />
             <span className="journey-spark spark-3" />
+            <span className="journey-spark spark-4" />
           </div>
         </div>
 
@@ -132,9 +130,9 @@ export default function Home() {
         <div className="marquee-track">
           {/* Quadruple the words so the track is always wider than any screen */}
           {[...MARQUEE_WORDS, ...MARQUEE_WORDS, ...MARQUEE_WORDS, ...MARQUEE_WORDS].map((word, i) => (
-            <span key={i}>
-              {word}
-              <span className="dot" aria-hidden="true"> ·</span>
+            <span key={i} className="marquee-item">
+              <span className="marquee-word">{word}</span>
+              <span className="marquee-dot" aria-hidden="true">·</span>
             </span>
           ))}
         </div>

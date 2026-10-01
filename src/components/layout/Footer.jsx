@@ -43,7 +43,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <span>© 2025 Success Squad. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} Success Squad. All rights reserved.</span>
         <span className="tagline-footer">From Vision to Venture.</span>
       </div>
     </footer>
