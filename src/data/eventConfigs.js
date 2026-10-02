@@ -28,38 +28,73 @@ export const eventConfigs = {
   },
 
   'fflec': {
-    id:       'fflec',
-    name:     'FFLEC',
-    tagline:  'Free Fire squad battles. Prove your squad is elite.',
-    comingSoon: true,
+    id:           'fflec',
+    name:         'FFLEC',
+    tagline:      'Free Fire squad battles. Prove your squad is elite.',
+    teamSize:     4,
+    entryFee:     149,
+    upiId:        '9404337568@upi',
+    comingSoon:   false,
+    fields: {
+      leader: ['name', 'phone', 'email'],
+      members: 3,
+    },
   },
 
   'hackathon-24h': {
-    id:       'hackathon-24h',
-    name:     '24-Hour Hackathon',
-    tagline:  'Ship something real in 24 hours. No excuses.',
-    comingSoon: true,
+    id:           'hackathon-24h',
+    name:         '24-Hour Hackathon',
+    tagline:      'Ship something real in 24 hours. No excuses.',
+    teamSize:     4,
+    entryFee:     299,
+    upiId:        '9404337568@upi',
+    comingSoon:   false,
+    fields: {
+      leader: ['name', 'phone', 'email'],
+      members: 3,
+    },
   },
 
   'ipl-auction': {
-    id:       'ipl-auction',
-    name:     'IPL Auction',
-    tagline:  'Build your dream team. Strategy meets madness.',
-    comingSoon: true,
+    id:           'ipl-auction',
+    name:         'IPL Auction',
+    tagline:      'Build your dream team. Strategy meets madness.',
+    teamSize:     4,
+    entryFee:     99,
+    upiId:        '9404337568@upi',
+    comingSoon:   false,
+    fields: {
+      leader: ['name', 'phone', 'email'],
+      members: 3,
+    },
   },
 
   'startup-pitch': {
-    id:       'startup-pitch',
-    name:     'Startup Pitch Battle',
-    tagline:  'Pitch your idea. Win mentorship, funding access & glory.',
-    comingSoon: true,
+    id:           'startup-pitch',
+    name:         'Startup Pitch Battle',
+    tagline:      'Pitch your idea. Win mentorship, funding access & glory.',
+    teamSize:     4,
+    entryFee:     49, // Token fee required for Razorpay QR integration
+    upiId:        '9404337568@upi',
+    comingSoon:   false,
+    fields: {
+      leader: ['name', 'phone', 'email'],
+      members: 3,
+    },
   },
 
-  'mun': {
-    id:       'mun',
-    name:     'MUN',
-    tagline:  'Debate global issues. Lead delegations. Make history.',
-    comingSoon: true,
+  'money-makers': {
+    id:           'money-makers',
+    name:         'Money Makers',
+    tagline:      'Trade, invest, and multiply your virtual portfolio.',
+    teamSize:     4,
+    entryFee:     249,
+    upiId:        '9404337568@upi',
+    comingSoon:   false,
+    fields: {
+      leader: ['name', 'phone', 'email'],
+      members: 3,
+    },
   },
 }
 
@@ -70,5 +105,5 @@ export const efestEvents = [
   eventConfigs['hackathon-24h'],
   eventConfigs['ipl-auction'],
   eventConfigs['startup-pitch'],
-  eventConfigs['mun'],
+  eventConfigs['money-makers'],
 ]

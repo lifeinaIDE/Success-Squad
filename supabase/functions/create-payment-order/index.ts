@@ -21,8 +21,8 @@ const ENTRY_FEE_MAP: Record<string, number> = {
   'fflec':         149,
   'hackathon-24h': 299,
   'ipl-auction':   99,
-  'startup-pitch': 0,
-  'mun':           249,
+  'startup-pitch': 49,
+  'money-makers':  249,
 }
 
 serve(async (req) => {
