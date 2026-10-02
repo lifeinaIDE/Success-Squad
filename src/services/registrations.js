@@ -1,67 +1,71 @@
 /**
  * src/services/registrations.js  (Supabase edition)
  *
- * All Supabase Postgres + Storage + Edge Function operations for registrations.
- *
- * Public API:
- *  createPaymentOrder(eventId, teamData)
- *    → invokes create-payment-order Edge Function
- *    → returns { orderId, upiIntentLink, expiresAt, amountINR }
- *
- *  subscribeToOrderStatus(orderId, onUpdate)
- *    → Supabase Realtime subscription on pending_payments row
- *    → returns unsubscribe function for useEffect cleanup
- *
- *  expireOrder(orderId)
- *    → invokes expire-order Edge Function
- *
- *  getRegistrationByOrderId(orderId)
- *    → fetches from registrations table by order_id (after payment confirmed)
- *
- *  getRegistrationByTeamId(teamId)
- *    → fetches from registrations table by team_id (for status lookup page)
- *
- *  uploadScreenshot(teamId, eventId, file)
- *    → uploads to Supabase Storage, updates registrations.screenshot_url
- *
- *  listRegistrations(eventId?)
- *    → admin: fetch all registrations (optionally by event)
- *
- *  markVerified(id)
- *    → admin: set status='verified', verified_at=now()
+ * All Supabase Postgres + Storage operations for registrations.
  */
 
 import { supabase } from './supabase.js'
 
-// Guard: throw a clear error if Supabase isn't configured yet
 function requireSupabase() {
-  if (!supabase) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.')
+  if (!supabase) throw new Error('Supabase is not configured.')
   return supabase
 }
 
-// ── createPaymentOrder ───────────────────────────────────────────────────────
-export async function createPaymentOrder(eventId, teamData) {
+// ── holdSlot ─────────────────────────────────────────────────────────────────
+export async function holdSlot(eventId, teamData, amountINR) {
   const sb = requireSupabase()
-  const { data, error } = await sb.functions.invoke('create-payment-order', {
-    body: { eventId, teamData },
+  
+  const { data, error } = await sb.rpc('hold_slot', {
+    p_event_id: eventId,
+    p_team_data: teamData,
+    p_amount: amountINR
   })
 
   if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  if (!data) throw new Error("Could not hold slot")
 
-  return data // { orderId, upiIntentLink, expiresAt, amountINR }
+  return {
+    id: data.id,
+    orderId: data.order_id,
+    expiresAt: data.expires_at
+  }
+}
+
+// ── submitPaymentProof ───────────────────────────────────────────────────────
+export async function submitPaymentProof(orderId, eventId, utr, file) {
+  const sb = requireSupabase()
+  
+  // 1. Upload screenshot
+  const path = `payment-proofs/${eventId}/${orderId}_${Date.now()}_${file.name}`
+  const { error: uploadErr } = await sb.storage
+    .from('payment-proofs')
+    .upload(path, file, { upsert: true })
+
+  if (uploadErr) throw uploadErr
+
+  const { data: urlData } = sb.storage
+    .from('payment-proofs')
+    .getPublicUrl(path)
+  
+  const screenshotUrl = urlData.publicUrl
+
+  // 2. Update pending_payments row
+  const { error: updateErr } = await sb
+    .from('pending_payments')
+    .update({ 
+      utr, 
+      screenshot_url: screenshotUrl,
+      status: 'submitted' 
+    })
+    .eq('order_id', orderId)
+    .eq('status', 'pending')
+
+  if (updateErr) throw updateErr
+  
+  return screenshotUrl
 }
 
 // ── subscribeToOrderStatus ───────────────────────────────────────────────────
-/**
- * Sets up a Supabase Realtime subscription on the pending_payments row.
- * Fires onUpdate(newRow) whenever the row is updated.
- * Returns a cleanup function — call it in useEffect return.
- *
- * @param {string}   orderId
- * @param {Function} onUpdate — receives the updated row object
- * @returns {Function} unsubscribe
- */
 export function subscribeToOrderStatus(orderId, onUpdate) {
   const channel = supabase
     .channel(`order-status-${orderId}`)
@@ -86,18 +90,29 @@ export function subscribeToOrderStatus(orderId, onUpdate) {
 
 // ── expireOrder ──────────────────────────────────────────────────────────────
 export async function expireOrder(orderId) {
-  const { data, error } = await supabase.functions.invoke('expire-order', {
-    body: { orderId },
-  })
+  const { data, error } = await supabase
+    .from('pending_payments')
+    .update({ status: 'expired' })
+    .eq('order_id', orderId)
+    .eq('status', 'pending')
+
+  if (error) throw error
+  return data
+}
+
+// ── getPendingPaymentByOrderId ───────────────────────────────────────────────
+export async function getPendingPaymentByOrderId(orderId) {
+  const { data, error } = await supabase
+    .from('pending_payments')
+    .select('*')
+    .eq('order_id', orderId)
+    .single()
+
   if (error) throw error
   return data
 }
 
 // ── getRegistrationByOrderId ─────────────────────────────────────────────────
-/**
- * Called by ConfirmationStep after the Realtime sub confirms 'paid'.
- * The DB trigger has already inserted the registrations row by this point.
- */
 export async function getRegistrationByOrderId(orderId) {
   const { data, error } = await supabase
     .from('registrations')
@@ -105,8 +120,8 @@ export async function getRegistrationByOrderId(orderId) {
     .eq('order_id', orderId)
     .single()
 
-  if (error) throw error
-  return data
+  if (error && error.code !== 'PGRST116') throw error
+  return data ?? null
 }
 
 // ── getRegistrationByTeamId ──────────────────────────────────────────────────
@@ -117,37 +132,28 @@ export async function getRegistrationByTeamId(teamId) {
     .eq('team_id', teamId.toUpperCase())
     .single()
 
-  if (error && error.code !== 'PGRST116') throw error // PGRST116 = 0 rows
+  if (error && error.code !== 'PGRST116') throw error
   return data ?? null
 }
 
-// ── uploadScreenshot ─────────────────────────────────────────────────────────
-export async function uploadScreenshot(teamId, eventId, file) {
-  const path = `payment-proofs/${eventId}/${teamId}_${Date.now()}_${file.name}`
+// ── listSubmittedPayments (admin) ────────────────────────────────────────────
+export async function listSubmittedPayments(eventId = null) {
+  let query = supabase
+    .from('pending_payments')
+    .select('*')
+    .eq('status', 'submitted')
+    .order('created_at', { ascending: true })
 
-  const { error: uploadErr } = await supabase.storage
-    .from('payment-proofs')
-    .upload(path, file, { upsert: true })
+  if (eventId) {
+    query = query.eq('event_id', eventId)
+  }
 
-  if (uploadErr) throw uploadErr
-
-  const { data: urlData } = supabase.storage
-    .from('payment-proofs')
-    .getPublicUrl(path)
-
-  const screenshotUrl = urlData.publicUrl
-
-  // Update the registrations row
-  const { error: updateErr } = await supabase
-    .from('registrations')
-    .update({ screenshot_url: screenshotUrl })
-    .eq('team_id', teamId)
-
-  if (updateErr) throw updateErr
-  return screenshotUrl
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
 }
 
-// ── listRegistrations (admin) ─────────────────────────────────────────────────
+// ── listRegistrations (admin) ────────────────────────────────────────────────
 export async function listRegistrations(eventId = null) {
   let query = supabase
     .from('registrations')
@@ -163,13 +169,23 @@ export async function listRegistrations(eventId = null) {
   return data ?? []
 }
 
-// ── markVerified (admin) ──────────────────────────────────────────────────────
-export async function markVerified(id) {
+// ── verifyPayment (admin) ────────────────────────────────────────────────────
+export async function verifyPayment(id) {
   const { error } = await supabase
-    .from('registrations')
-    .update({
-      status:      'verified',
-      verified_at: new Date().toISOString(),
+    .from('pending_payments')
+    .update({ status: 'verified' })
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+// ── rejectPayment (admin) ────────────────────────────────────────────────────
+export async function rejectPayment(id, reason) {
+  const { error } = await supabase
+    .from('pending_payments')
+    .update({ 
+      status: 'rejected',
+      rejection_reason: reason
     })
     .eq('id', id)
 
