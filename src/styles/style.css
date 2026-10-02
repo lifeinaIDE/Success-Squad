@@ -1752,65 +1752,65 @@ a, button, .nav-link, .btn {
   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
-/* Small — TeamCard grid (80 px halo diameter) */
+/* Small — TeamCard grid (larger now) */
 .member-photo-wrapper--sm {
-  width: 80px;
-  /* card bottom padding + this extra height keeps text baseline stable */
-  height: 96px;      /* halo (80px) + overflow allowance (16px) */
-  margin-bottom: 8px;
-}
-
-/* Large — FeaturedTeamCard (120 px halo diameter) */
-.member-photo-wrapper--lg {
-  width: 120px;
-  height: 144px;     /* halo (120px) + overflow allowance (24px) */
+  width: 140px;
+  height: 170px;     /* allows 30px pop-out above the 140px circle */
   margin-bottom: 12px;
 }
 
-/* Circular halo — sits BEHIND the photo */
+/* Large — FeaturedTeamCard (even larger) */
+.member-photo-wrapper--lg {
+  width: 180px;
+  height: 220px;     /* allows 40px pop-out above the 180px circle */
+  margin-bottom: 16px;
+}
+
+/* Circular halo — sits BEHIND the photo, anchored to BOTTOM */
 .member-photo-backdrop {
   position: absolute;
   border-radius: 50%;
   background: var(--accent);
   z-index: 0;
-  /* Center horizontally, sit at the TOP so it covers head + upper chest */
+  /* Center horizontally, sit at the BOTTOM so body sits inside */
   left: 50%;
   transform: translateX(-50%);
-  top: 0;
+  bottom: 0;
 }
 
 .member-photo-wrapper--sm .member-photo-backdrop {
-  width: 80px;
-  height: 80px;
+  width: 140px;
+  height: 140px;
 }
 
 .member-photo-wrapper--lg .member-photo-backdrop {
-  width: 120px;
-  height: 120px;
+  width: 180px;
+  height: 180px;
 }
 
 /* The cutout PNG — on top of backdrop, silhouette drop-shadow */
 .member-photo {
   position: absolute;
   z-index: 1;
-  object-fit: contain;   /* NEVER cover — transparent PNG edges must breathe */
+  object-fit: contain;
+  /* Anchor to bottom center so the torso rests at the bottom of the circle */
+  object-position: bottom center;
   left: 50%;
   transform: translateX(-50%);
-  /* Head sits at the top; torso extends below the circle naturally */
-  top: 0;
+  /* Anchor to BOTTOM */
+  bottom: 0;
   display: block;
-  /* Drop-shadow follows the actual cutout silhouette, not a box */
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.45));
 }
 
 .member-photo-wrapper--sm .member-photo {
-  width: 80px;
-  height: 120px;  /* taller than wrapper so torso overflows */
+  width: 160px;   /* slightly wider than circle */
+  height: 180px;  /* taller than circle, head pops out top */
 }
 
 .member-photo-wrapper--lg .member-photo {
-  width: 120px;
-  height: 180px;
+  width: 210px;
+  height: 230px;
 }
 
 /* Card hover → photo+circle unit scales slightly for a "alive" feel */
