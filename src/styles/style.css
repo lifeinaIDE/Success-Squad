@@ -1752,18 +1752,12 @@ a, button, .nav-link, .btn {
   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
-/* Small — TeamCard grid (larger now) */
-.member-photo-wrapper--sm {
-  width: 140px;
-  height: 170px;     /* allows 30px pop-out above the 140px circle */
-  margin-bottom: 12px;
-}
-
-/* Large — FeaturedTeamCard (even larger) */
+/* Small & Large — Unified Size for everyone ("no small no bigger") */
+.member-photo-wrapper--sm,
 .member-photo-wrapper--lg {
-  width: 180px;
-  height: 220px;     /* allows 40px pop-out above the 180px circle */
-  margin-bottom: 16px;
+  width: 140px;
+  height: 170px;     /* allows pop-out above the circle */
+  margin-bottom: 12px;
 }
 
 /* Circular halo — sits BEHIND the photo, anchored to BOTTOM */
@@ -1778,14 +1772,10 @@ a, button, .nav-link, .btn {
   bottom: 0;
 }
 
-.member-photo-wrapper--sm .member-photo-backdrop {
+.member-photo-wrapper--sm .member-photo-backdrop,
+.member-photo-wrapper--lg .member-photo-backdrop {
   width: 140px;
   height: 140px;
-}
-
-.member-photo-wrapper--lg .member-photo-backdrop {
-  width: 180px;
-  height: 180px;
 }
 
 /* The cutout PNG — on top of backdrop, silhouette drop-shadow */
@@ -1793,25 +1783,21 @@ a, button, .nav-link, .btn {
   position: absolute;
   z-index: 1;
   object-fit: contain;
-  /* Anchor to bottom center so the torso rests at the bottom of the circle */
   object-position: bottom center;
   left: 50%;
   transform: translateX(-50%);
-  /* Anchor to BOTTOM */
-  bottom: 0;
+  /* Shift down slightly so the torso explicitly overlaps the bottom edge */
+  bottom: -6px;
   display: block;
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.45));
 }
 
-.member-photo-wrapper--sm .member-photo {
-  width: 160px;   /* slightly wider than circle */
-  height: 180px;  /* taller than circle, head pops out top */
+.member-photo-wrapper--sm .member-photo,
+.member-photo-wrapper--lg .member-photo {
+  width: 165px;   /* slightly wider than circle */
+  height: 175px;  /* taller than circle, head pops out top */
 }
 
-.member-photo-wrapper--lg .member-photo {
-  width: 210px;
-  height: 230px;
-}
 
 /* Card hover → photo+circle unit scales slightly for a "alive" feel */
 .team-card:hover .member-photo-wrapper,
