@@ -1729,8 +1729,95 @@ a, button, .nav-link, .btn {
 .team-card-featured p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 20px; }
 .team-social a { font-size: 0.8rem; color: var(--accent); text-decoration: none; font-weight: 500; }
 .team-social a:hover { text-decoration: underline; }
+/* initials fallback: keep overflow:hidden so the gradient circle clips correctly */
 .team-avatar { overflow: hidden; border: 2px solid rgba(99,102,241,0.15); }
+/* for members WITH a plain JPG (no transparent PNG yet) keep cover */
 .team-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── STICKER CUTOUT AVATAR SYSTEM ───────────────────────────────────────
+   .member-photo-wrapper   — relative container, overflow:visible so torso
+                             can extend below the circle boundary
+   .member-photo-backdrop  — the colored halo circle, z-index 0
+   .member-photo           — the transparent PNG, z-index 1, drop-shadow
+                             follows actual silhouette (not box-shadow)
+   --sm  TeamCard grid (80px circle baseline)
+   --lg  FeaturedTeamCard (100px circle baseline)
+──────────────────────────────────────────────────────────────────────── */
+
+.member-photo-wrapper {
+  position: relative;
+  margin: 0 auto;
+  /* overflow MUST be visible so the torso silhouette clears the circle */
+  overflow: visible;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Small — TeamCard grid (80 px halo diameter) */
+.member-photo-wrapper--sm {
+  width: 80px;
+  /* card bottom padding + this extra height keeps text baseline stable */
+  height: 96px;      /* halo (80px) + overflow allowance (16px) */
+  margin-bottom: 8px;
+}
+
+/* Large — FeaturedTeamCard (120 px halo diameter) */
+.member-photo-wrapper--lg {
+  width: 120px;
+  height: 144px;     /* halo (120px) + overflow allowance (24px) */
+  margin-bottom: 12px;
+}
+
+/* Circular halo — sits BEHIND the photo */
+.member-photo-backdrop {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  z-index: 0;
+  /* Center horizontally, sit at the TOP so it covers head + upper chest */
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+}
+
+.member-photo-wrapper--sm .member-photo-backdrop {
+  width: 80px;
+  height: 80px;
+}
+
+.member-photo-wrapper--lg .member-photo-backdrop {
+  width: 120px;
+  height: 120px;
+}
+
+/* The cutout PNG — on top of backdrop, silhouette drop-shadow */
+.member-photo {
+  position: absolute;
+  z-index: 1;
+  object-fit: contain;   /* NEVER cover — transparent PNG edges must breathe */
+  left: 50%;
+  transform: translateX(-50%);
+  /* Head sits at the top; torso extends below the circle naturally */
+  top: 0;
+  display: block;
+  /* Drop-shadow follows the actual cutout silhouette, not a box */
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.45));
+}
+
+.member-photo-wrapper--sm .member-photo {
+  width: 80px;
+  height: 120px;  /* taller than wrapper so torso overflows */
+}
+
+.member-photo-wrapper--lg .member-photo {
+  width: 120px;
+  height: 180px;
+}
+
+/* Card hover → photo+circle unit scales slightly for a "alive" feel */
+.team-card:hover .member-photo-wrapper,
+.team-card-featured:hover .member-photo-wrapper {
+  transform: scale(1.035);
+}
 
 /* ---- EVENTS PAGE ---- */
 .event-cards {
