@@ -33,7 +33,15 @@ export default function About() {
           </div>
           <div className="col-visual">
             <div className="about-visual">
-              <img src="/images/success-squad-team.jpg" alt="Success Squad Team Photo" className="team-photo" />
+              <img
+                src="/images/success-squad-team.jpg"
+                alt="Success Squad Team Photo"
+                className="team-photo"
+                width="640"
+                height="480"
+                fetchpriority="high"
+                decoding="async"
+              />
             </div>
           </div>
         </div>
