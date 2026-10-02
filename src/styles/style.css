@@ -1043,6 +1043,15 @@ a, button, .nav-link, .btn {
   color: #ffffff;
 }
 
+.team-avatar-initials {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  user-select: none;
+  letter-spacing: -0.5px;
+}
+
 .team-card h3 {
   font-family: var(--font-display);
   font-weight: 700;
