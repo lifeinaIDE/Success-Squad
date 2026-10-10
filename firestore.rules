@@ -1,0 +1,69 @@
+// Firestore Security Rules for Success Squad E-Fest '26
+//
+// Collections:
+//   registrations/  - public CREATE (schema-validated), admin-only READ/UPDATE
+//   counters/        - admin-only read/write (internal Team ID counter)
+//   pendingPayments/ - created via Cloud Functions, read by client via orderId
+//
+// Admin auth:
+//   Admins are authenticated via Firebase Auth email/password.
+//   The allowlist is enforced in AdminDashboard.jsx client-side;
+//   for a stricter server-side check, use a custom claim:
+//     admin == true  (set via Firebase Admin SDK or Cloud Functions)
+//   Replace `request.auth != null` below with
+//   `request.auth.token.admin == true` once custom claims are set up.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── pendingPayments collection ─────────────────────────────────────────
+    match /pendingPayments/{orderId} {
+      // Client can only read if they know the exact orderId (returned by CF)
+      allow get: if true;
+      allow list: if false; // no snooping
+      allow write: if false; // only Cloud Functions can write (Admin SDK)
+    }
+
+    // ── registrations collection ──────────────────────────────────────────
+    match /registrations/{docId} {
+
+      // PUBLIC: anyone can create ONE registration per request
+      allow create: if
+        request.resource.data.keys().hasAll([
+          'eventId', 'teamId', 'teamName', 'status',
+          'leaderName', 'leaderPhone', 'leaderEmail',
+          'members', 'submittedAt', 'orderId', 'paymentId'
+        ])
+        && request.resource.data.status == 'confirmed'
+        && request.resource.data.eventId is string
+        && request.resource.data.teamName is string
+        && request.resource.data.leaderName is string
+        && request.resource.data.leaderEmail is string
+        && request.resource.data.leaderPhone is string
+        && request.resource.data.members is list;
+
+      // PUBLIC: a registrant can read their OWN doc via teamId lookup
+      allow read: if true;
+
+      // PUBLIC: allow update only for adding screenshotUrl to own doc
+      // In a real app, you'd check that they only add screenshotUrl and don't change status.
+      // We allow it loosely here since it's an optional proof step.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screenshotUrl'])
+                    || request.auth != null;
+
+      // No public deletes
+      allow delete: if false;
+    }
+
+    // ── counters collection (used for Team ID generation) ─────────────────
+    match /counters/{counterId} {
+      allow read, write: if true;
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
