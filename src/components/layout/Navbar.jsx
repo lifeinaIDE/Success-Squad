@@ -103,15 +103,6 @@ export default function Navbar() {
             Get Involved
           </NavLink>
         </li>
-        <li>
-          <NavLink
-            to="/admin"
-            className={({ isActive }) => `nav-link nav-admin-btn${isActive ? ' active' : ''}`}
-            title="Admin Dashboard Portal"
-          >
-            Admin
-          </NavLink>
-        </li>
       </ul>
     </nav>
   )

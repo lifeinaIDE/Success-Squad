@@ -1,5 +1,5 @@
 // Gemini AI Chat Service for Success Squad (SquadAI)
-const DEFAULT_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+const DEFAULT_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Primary and fallback models supported by this API key
 const CANDIDATE_MODELS = [

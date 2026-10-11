@@ -140,17 +140,19 @@ function LoginForm({ onLogin, onDemoLogin, error, isSupabaseActive }) {
           </div>
         )}
 
-        {/* Demo Mode for testing when local .env is not yet configured */}
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '8px', textAlign: 'center' }}>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ fontSize: '0.82rem', width: '100%', color: 'var(--accent)', justifyContent: 'center' }}
-            onClick={onDemoLogin}
-          >
-            ⚡ Preview Admin Dashboard (Demo Access)
-          </button>
-        </div>
+        {/* Demo Mode only available in local development or if explicitly enabled via VITE_ENABLE_ADMIN_DEMO */}
+        {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true') && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '8px', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ fontSize: '0.82rem', width: '100%', color: 'var(--accent)', justifyContent: 'center' }}
+              onClick={onDemoLogin}
+            >
+              ⚡ Preview Admin Dashboard (Dev / Demo Access)
+            </button>
+          </div>
+        )}
       </form>
     </div>
   )
