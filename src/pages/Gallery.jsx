@@ -6,7 +6,7 @@ import { galleryData, memoriesImages } from '../data/galleryData.js'
 import { useEffect, useRef } from 'react'
 
 /**
- * MemoriesSection — "Our Memories" diagonal cascade.
+ * MemoriesSection - "Our Memories" diagonal cascade.
  * Scroll drift + hover lift match the original memories.js behavior.
  */
 function MemoriesSection() {

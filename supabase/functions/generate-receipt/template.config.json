@@ -1,0 +1,121 @@
+{
+  "fields": {
+    "receipt_no": {
+      "key": "receipt_no",
+      "page": 0,
+      "x": 180,
+      "y": 578,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 100
+    },
+    "payment_date": {
+      "key": "payment_date",
+      "page": 0,
+      "x": 420,
+      "y": 578,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 100
+    },
+    "team_name": {
+      "key": "team_name",
+      "page": 0,
+      "x": 300,
+      "y": 485,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 250
+    },
+    "leader_name": {
+      "key": "leader_name",
+      "page": 0,
+      "x": 300,
+      "y": 448,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 250
+    },
+    "registration_id": {
+      "key": "registration_id",
+      "page": 0,
+      "x": 300,
+      "y": 412,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 250
+    },
+    "event_name": {
+      "key": "event_name",
+      "page": 0,
+      "x": 300,
+      "y": 375,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 250
+    },
+    "applicable_fees": {
+      "key": "applicable_fees",
+      "page": 0,
+      "x": 300,
+      "y": 338,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 150
+    },
+    "amount_paid": {
+      "key": "amount_paid",
+      "page": 0,
+      "x": 300,
+      "y": 302,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 150
+    },
+    "transaction_id": {
+      "key": "transaction_id",
+      "page": 0,
+      "x": 300,
+      "y": 265,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 250
+    },
+    "payment_method": {
+      "key": "payment_method",
+      "page": 0,
+      "x": 300,
+      "y": 230,
+      "fontSize": 12,
+      "fontFamily": "DM Sans",
+      "color": "#333333",
+      "align": "left",
+      "maxWidth": 150
+    },
+    "qr_code": {
+      "key": "qr_code",
+      "page": 0,
+      "x": 480,
+      "y": 80,
+      "size": 60
+    }
+  }
+}

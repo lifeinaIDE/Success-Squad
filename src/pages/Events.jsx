@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import EFestHero from '../components/events/EFestHero.jsx'
-import SponsorsSection from '../components/events/SponsorsSection.jsx'
 import { pastEvents } from '../data/eventsData.js'
 
 export default function Events() {
@@ -15,21 +14,13 @@ export default function Events() {
         <p>From hackathons to fireside chats, we build experiences that inspire, challenge, and connect.</p>
       </div>
 
-      {/* UPCOMING — now a single E-Fest hero card */}
+      {/* UPCOMING, now a single E-Fest hero card */}
       <section className="section" style={{ background: 'var(--bg)' }}>
         <div className="section-label">Upcoming</div>
         <h2 className="section-title">What's <span className="accent">next.</span></h2>
         <div className="event-cards">
           <EFestHero />
         </div>
-      </section>
-
-      {/* E-FEST SPONSORS & PARTNERS */}
-      <section className="section" style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '40px 0' }}>
-        <SponsorsSection
-          title="Official Event Partners"
-          subtitle="E-Fest '26 is powered by industry leaders, tech innovators, and community giants."
-        />
       </section>
 
       {/* PAST EVENTS */}

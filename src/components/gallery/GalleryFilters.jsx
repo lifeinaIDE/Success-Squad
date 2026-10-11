@@ -1,5 +1,5 @@
 /**
- * GalleryFilters — category filter button bar for the gallery page.
+ * GalleryFilters - category filter button bar for the gallery page.
  * Preserves: active state, per-category photo count badges.
  *
  * @param {Array}    filters        - array of { id, label, count }

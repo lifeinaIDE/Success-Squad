@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import { socialData } from '../data/socialData.js'
-import { supabase } from '../services/supabase.js'
 
 const INITIAL_FORM = { name: '', email: '', subject: '', message: '' }
 
@@ -36,24 +35,7 @@ export default function Contact() {
     try {
       const data = new FormData()
       Object.entries(form).forEach(([k, v]) => data.append(k, v))
-      await fetch('/submit-form.php', { method: 'POST', body: data }).catch(() => {})
-
-      // Also persist to Supabase contact_messages
-      if (supabase) {
-        try {
-          await supabase.from('contact_messages').insert([{
-            name: form.name,
-            email: form.email,
-            subject: form.subject || 'General Inquiry',
-            message: form.message,
-            status: 'unread',
-            created_at: new Date().toISOString()
-          }])
-        } catch (sbErr) {
-          console.warn('[Contact] Supabase insert note:', sbErr)
-        }
-      }
-
+      await fetch('/submit-form.php', { method: 'POST', body: data })
       setStatus('success')
     } catch {
       // Matches original catch-block: show success on static hosting
@@ -66,7 +48,7 @@ export default function Contact() {
       <div className="page-header">
         <div className="section-label">Get Involved</div>
         <h1>Let's build <span className="accent">together.</span></h1>
-        <p>Whether you want to join the team, collaborate on events, sponsor us, or pitch your startup — we're all ears.</p>
+        <p>Whether you want to join the team, collaborate on events, sponsor us, or pitch your startup, we're all ears.</p>
       </div>
 
       <section className="section contact-section" style={{ background: 'var(--bg)' }}>

@@ -1,5 +1,5 @@
 /**
- * Gallery event carousels — each item maps to one GalleryEvent section.
+ * Gallery event carousels - each item maps to one GalleryEvent section.
  * Sources from gallery.html carousel sections.
  */
 export const galleryData = [
@@ -16,14 +16,14 @@ export const galleryData = [
     ],
   },
   {
-    id: 'aibootcamp',
+    id: 'illuminate2025',
     year: '2026',
-    title: 'AI',
-    accentTitle: 'Bootcamp',
+    title: 'Illuminate',
+    accentTitle: '2025',
     bg: 'var(--bg-2)',
     slides: [
-      { src: '/images/success-squad-team.jpg', alt: 'AI Bootcamp Image 1' },
-      { src: '/images/success-squad-team.jpg', alt: 'AI Bootcamp Image 2' },
+      { src: '/images/success-squad-team.jpg', alt: 'Illuminate 2025 Image 1' },
+      { src: '/images/success-squad-team.jpg', alt: 'Illuminate 2025 Image 2' },
     ],
   },
   {
@@ -40,7 +40,7 @@ export const galleryData = [
 ]
 
 /**
- * Our Memories cascade — 8 cards matching gallery.html memories-stack order.
+ * Our Memories cascade - 8 cards matching gallery.html memories-stack order.
  */
 export const memoriesImages = [
   { id: 'mem-0', src: '/images/success-squad-team.jpg',  alt: 'Memory' },

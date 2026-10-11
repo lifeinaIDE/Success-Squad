@@ -7,7 +7,7 @@
       GitHub Pages has no server-side router, so any deep link (e.g. /events)
       returns this 404 page. This script rewrites the URL into a query string
       and redirects to index.html, where the companion script already in
-      index.html restores it — letting React Router take over normally.
+      index.html restores it, letting React Router take over normally.
       pathSegmentsToKeep = 1 because this is a project page served from
       https://<username>.github.io/<repo-name>/ (the repo name segment must
       be preserved). Set it to 0 only if deploying to a custom domain root.

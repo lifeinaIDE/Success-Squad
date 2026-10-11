@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import Layout           from './components/layout/Layout.jsx'
 import Home             from './pages/Home.jsx'
@@ -7,11 +7,11 @@ import Team             from './pages/Team.jsx'
 import Events           from './pages/Events.jsx'
 import Gallery          from './pages/Gallery.jsx'
 import Startups         from './pages/Startups.jsx'
-import Sponsors         from './pages/Sponsors.jsx'
 import Contact          from './pages/Contact.jsx'
+import PrivacyPolicy    from './pages/PrivacyPolicy.jsx'
 import NotFound         from './pages/NotFound.jsx'
 
-// Hidden / unlisted routes — NOT referenced in any <nav> or <Link> elsewhere.
+// Hidden / unlisted routes - NOT referenced in any <nav> or <Link> elsewhere.
 // The only entry point to RegistrationHub is the "Register Now" button in EFestHero.
 // StatusLookup is linked only from the ConfirmationStep inside the modal.
 // AdminDashboard is only shared internally with the admin team.
@@ -38,10 +38,8 @@ export default function App() {
             <Route path="events"            element={<Events />} />
             <Route path="gallery"           element={<Gallery />} />
             <Route path="startups"          element={<Startups />} />
-            <Route path="sponsors"          element={<Sponsors />} />
-            <Route path="sponsor"           element={<Navigate to="/sponsors" replace />} />
-            <Route path="sponser"           element={<Navigate to="/sponsors" replace />} />
             <Route path="contact"           element={<Contact />} />
+            <Route path="privacy-policy"    element={<PrivacyPolicy />} />
 
             {/* ── Hidden / unlisted routes (inside Layout for consistent chrome) ── */}
             {/* Registration hub: only reachable via the "Register Now" button     */}

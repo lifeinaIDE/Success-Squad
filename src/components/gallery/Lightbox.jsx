@@ -1,5 +1,5 @@
 /**
- * Lightbox — full-screen photo overlay with prev/next navigation.
+ * Lightbox - full-screen photo overlay with prev/next navigation.
  * Keyboard (Escape, ArrowLeft, ArrowRight) and touch-swipe are handled
  * by useLightbox() in the parent. This component is purely presentational.
  *

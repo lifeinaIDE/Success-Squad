@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 /**
- * GalleryCarousel — a single event's photo carousel with prev/next buttons and dot navigation.
+ * GalleryCarousel - a single event's photo carousel with prev/next buttons and dot navigation.
  * Replaces the imperative updateCarousel/moveCarousel/jumpCarousel functions in the original gallery.html.
  */
 export default function GalleryCarousel({ id, year, title, accentTitle, bg, slides }) {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 /**
- * GalleryEvent — a single event carousel section on the gallery page.
+ * GalleryEvent - a single event carousel section on the gallery page.
  * Replaces the imperative moveCarousel/jumpCarousel/updateCarousel DOM functions
  * from gallery.html's inline <script> with React state.
  *

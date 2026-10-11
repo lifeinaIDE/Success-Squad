@@ -6,6 +6,5 @@ export const footerLinks = [
   { id: 'events',   label: 'Events',   to: '/events' },
   { id: 'startups', label: 'Startups', to: '/startups' },
   { id: 'gallery',  label: 'Gallery',  to: '/gallery' },
-  { id: 'sponsors', label: 'Sponsors', to: '/sponsors' },
   { id: 'contact',  label: 'Contact',  to: '/contact' },
 ]

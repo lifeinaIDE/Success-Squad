@@ -6,15 +6,15 @@
  * To enable a future event:
  *  1. Set comingSoon: false
  *  2. Fill in all fields (teamSize, entryFee, upiId, qrCodeImage, fields)
- *  3. No other code changes needed — RegistrationModal reads this config.
+ *  3. No other code changes needed - RegistrationModal reads this config.
  *
  * QR CODE STATUS (per event):
- *  ✅ bgmi-lec        — qrCodeImage set (/images/bgmi-upi-qr.png) — fill with real file
- *  ⚠️  fflec          — qrCodeImage NOT set — add /images/fflec-upi-qr.png
- *  ✅ craftcode        — registrationType: 'external-unstop'; no payment QR needed
- *  ⚠️  ipl-auction    — qrCodeImage NOT set — add /images/ipl-upi-qr.png
- *  ⚠️  startup-pitch  — qrCodeImage NOT set — add /images/pitch-upi-qr.png
- *  ⚠️  money-makers   — qrCodeImage NOT set — add /images/money-upi-qr.png
+ *  ✅ bgmi-lec - qrCodeImage set (/images/bgmi-upi-qr.png) - fill with real file
+ *  ⚠️  fflec - qrCodeImage NOT set - add /images/fflec-upi-qr.png
+ *  ✅ craftcode - registrationType: 'external-unstop'; no payment QR needed
+ *  ⚠️  ipl-auction - qrCodeImage NOT set - add /images/ipl-upi-qr.png
+ *  ⚠️  startup-pitch - qrCodeImage NOT set - add /images/pitch-upi-qr.png
+ *  ⚠️  money-makers - qrCodeImage NOT set - add /images/money-upi-qr.png
  *
  * NOTE: Any event missing a qrCodeImage will fall back to the BGMI QR as a
  * placeholder; replace by adding the correct file to /public/images/.
@@ -32,7 +32,7 @@ export const eventConfigs = {
     comingSoon:   false,
     fields: {
       leader: ['name', 'phone', 'email'],
-      members: 3, // member 2, 3, 4 — each has name + email (optional)
+      members: 3, // member 2, 3, 4 - each has name + email (optional)
     },
   },
 
@@ -58,19 +58,19 @@ export const eventConfigs = {
   // receipt only after admin verifies the Unstop registration ID + screenshot.
   //
   // TODO (confirm with team): Does CraftCode collect a separate Success Squad fee?
-  //   - DEFAULT ASSUMPTION: NO — Unstop handles all payment.
+  //   - DEFAULT ASSUMPTION: NO - Unstop handles all payment.
   //     If a separate fee IS collected, set hasSeparateFee: true and add upiId/
-  //     qrCodeImage here — PaymentStep will be shown inside Section B after unlock.
+  //     qrCodeImage here - PaymentStep will be shown inside Section B after unlock.
   // ─────────────────────────────────────────────────────────────────────────────
   'craftcode': {
     id:                'craftcode',
     name:              'CraftCode',
     tagline:           'Ship something real in 24 hours. No excuses.',
     teamSize:          4,
-    entryFee:          299,   // Fee charged on Unstop — not collected by Success Squad
+    entryFee:          299,   // Fee charged on Unstop - not collected by Success Squad
     registrationType:  'external-unstop',
     unstopUrl:         'https://unstop.com/competitions/craftcode-e-fest-26', // ⚠️ Replace with real Unstop URL
-    hasSeparateFee:    false, // See TODO above — change to true if SS collects a fee
+    hasSeparateFee:    false, // See TODO above - change to true if SS collects a fee
     comingSoon:        false,
     fields: {
       leader: ['name', 'phone', 'email'],

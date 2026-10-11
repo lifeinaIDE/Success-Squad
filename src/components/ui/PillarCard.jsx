@@ -1,5 +1,5 @@
 /**
- * PillarCard — "What we do" pillar on the Home page.
+ * PillarCard - "What we do" pillar on the Home page.
  */
 export default function PillarCard({ icon, title, description, delay }) {
   return (

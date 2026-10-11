@@ -3,26 +3,26 @@
  *
  * Two-section Unstop registration flow for CraftCode (external event).
  *
- * SECTION A — "Register on Unstop"
+ * SECTION A - "Register on Unstop"
  *   Collects: Unstop Registration ID + screenshot of Unstop confirmation.
  *   On submit → writes a pending_payments row with status 'pending_unstop_review'.
  *   This status counts toward slot capacity (same as 'submitted' elsewhere).
  *
- * SECTION B — "Download Receipt" (locked until Section A succeeds)
+ * SECTION B - "Download Receipt" (locked until Section A succeeds)
  *   Shows locked state until Section A resolves.
  *   Once admin marks the row 'verified', the receipt becomes downloadable.
  *
  * TODO (payment): Does CraftCode collect a separate Success Squad fee?
- *   - DEFAULT: NO — Unstop handles all payment. hasSeparateFee: false.
+ *   - DEFAULT: NO - Unstop handles all payment. hasSeparateFee: false.
  *   - If YES: set hasSeparateFee: true in eventConfigs.js for 'craftcode'.
  *     Section B will then show PaymentStep inside it before receipt unlock.
  *
  * Admin review: these items appear in the admin queue tagged as
- * "CraftCode — Unstop verification" with status 'pending_unstop_review'.
+ * "CraftCode - Unstop verification" with status 'pending_unstop_review'.
  */
 
 import { useState, useRef } from 'react'
-import { generateReceipt, printReceipt } from '../../utils/generateReceipt.js'
+import { generateReceipt } from '../../utils/generateReceipt.js'
 import { supabase } from '../../services/supabase.js'
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
@@ -64,13 +64,8 @@ function SectionA({ config, teamData, onSuccess }) {
 
     setPhase('submitting')
     try {
-      if (!supabase) {
-        throw new Error('Database service is not configured. Missing Supabase environment variables.')
-      }
-
       // 1. Upload screenshot to Supabase Storage
-      const safeName = (file?.name || 'unstop_proof.png').replace(/[^a-zA-Z0-9._-]/g, '_')
-      const path = `unstop-proofs/${config.id}/${Date.now()}_${safeName}`
+      const path = `unstop-proofs/${config.id}/${Date.now()}_${file.name}`
       const { error: uploadErr } = await supabase.storage
         .from('payment-proofs')
         .upload(path, file, { upsert: true })
@@ -201,56 +196,26 @@ function SectionA({ config, teamData, onSuccess }) {
 // ── Section B ────────────────────────────────────────────────────────────────
 function SectionB({ config, reg, isUnlocked }) {
   const [downloading, setDownloading] = useState(false)
-  const [printing, setPrinting]       = useState(false)
-  const [dlError, setDlError]         = useState('')
+  const [dlError, setDlError] = useState('')
 
-  const isVerified = reg?.status === 'verified' || reg?.status === 'confirmed' || reg?.payment_status === 'PAID'
+  const isVerified = reg?.status === 'verified' || reg?.status === 'confirmed'
 
   const handleDownload = async () => {
-    if (!isVerified) {
-      setDlError('Receipts can only be generated after submission is verified.')
-      return
-    }
     setDownloading(true)
     setDlError('')
     try {
       await generateReceipt({
-        team_id:     reg?.team_id || reg?.order_id || 'CRAFT-VERIFIED',
+        team_id:     reg?.team_id ?? ('CRAFT-PENDING'),
         event_id:    config.id,
         team_data:   reg?.team_data,
         amount_inr:  config.entryFee,
         utr:         reg?.utr,
-        verified_at: reg?.verified_at || new Date().toISOString(),
-        status:      'verified',
+        verified_at: reg?.verified_at,
       })
     } catch (err) {
-      setDlError(err.message || 'Failed to generate receipt. Try again.')
+      setDlError('Failed to generate receipt. Try again.')
     } finally {
       setDownloading(false)
-    }
-  }
-
-  const handlePrint = async () => {
-    if (!isVerified) {
-      setDlError('Receipts can only be printed after submission is verified.')
-      return
-    }
-    setPrinting(true)
-    setDlError('')
-    try {
-      await printReceipt({
-        team_id:     reg?.team_id || reg?.order_id || 'CRAFT-VERIFIED',
-        event_id:    config.id,
-        team_data:   reg?.team_data,
-        amount_inr:  config.entryFee,
-        utr:         reg?.utr,
-        verified_at: reg?.verified_at || new Date().toISOString(),
-        status:      'verified',
-      })
-    } catch (err) {
-      setDlError(err.message || 'Failed to prepare print preview.')
-    } finally {
-      setPrinting(false)
     }
   }
 
@@ -279,15 +244,23 @@ function SectionB({ config, reg, isUnlocked }) {
       <div style={{
         padding: '24px',
         borderRadius: 12,
-        border: '1px solid rgba(99,102,241,0.3)',
-        background: 'rgba(99,102,241,0.05)',
+        border: '1px solid rgba(245,158,11,0.3)',
+        background: 'rgba(245,158,11,0.05)',
         textAlign: 'center',
       }}>
         <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>⏳</div>
-        <p style={{ fontWeight: 600, marginBottom: 4, color: '#a5b4fc' }}>Unstop Submission Received!</p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 6 }}>
-          Your Unstop ID and proof have been recorded. In accordance with fest regulations, official PAID receipts are unlocked once verified.
+        <p style={{ fontWeight: 600, marginBottom: 4 }}>Pending Verification</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          Our team is reviewing your Unstop registration ID and screenshot.
+          Your receipt will be downloadable once verified.
         </p>
+        <button
+          className="btn btn-ghost"
+          disabled
+          style={{ marginTop: 16, width: '100%', opacity: 0.5, cursor: 'not-allowed' }}
+        >
+          🔒 Receipt Available After Verification
+        </button>
       </div>
     )
   }
@@ -301,32 +274,22 @@ function SectionB({ config, reg, isUnlocked }) {
       textAlign: 'center',
     }}>
       <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>🎉</div>
-      <p style={{ fontWeight: 600, marginBottom: 12, color: '#10b981' }}>Verified! Official Receipt Ready.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <button
-          className="btn btn-primary"
-          onClick={handleDownload}
-          disabled={downloading}
-          id="craftcode-download-receipt-btn"
-          style={{ background: 'linear-gradient(135deg, #10b981, #059669)', justifyContent: 'center' }}
-        >
-          {downloading ? 'Generating…' : '⬇ Download PDF'}
-        </button>
-        <button
-          className="btn btn-secondary"
-          onClick={handlePrint}
-          disabled={printing}
-          id="craftcode-print-receipt-btn"
-          style={{ justifyContent: 'center' }}
-        >
-          {printing ? 'Preparing…' : '🖨️ Print Receipt'}
-        </button>
-      </div>
+      <p style={{ fontWeight: 600, marginBottom: 4, color: '#10b981' }}>Verified! Download your receipt.</p>
+      {/* TODO: If CraftCode has a separate SS fee, show PaymentStep here before this button.
+          Default: no separate fee, Unstop handles all payment. */}
+      <button
+        className="btn btn-primary"
+        onClick={handleDownload}
+        disabled={downloading}
+        id="craftcode-download-receipt-btn"
+        style={{ marginTop: 12, width: '100%' }}
+      >
+        {downloading ? 'Generating…' : '⬇ Download Receipt (PDF)'}
+      </button>
       {dlError && <p className="reg-error" style={{ marginTop: 8 }}>{dlError}</p>}
     </div>
   )
 }
-
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function CraftCodeRegistration({ config, teamData, onClose }) {
@@ -381,7 +344,7 @@ export default function CraftCodeRegistration({ config, teamData, onClose }) {
         </div>
         <SectionB
           config={config}
-          reg={{ ...(sectionAResult || {}), team_data: teamData }}
+          reg={sectionAResult}
           isUnlocked={sectionADone}
         />
       </div>

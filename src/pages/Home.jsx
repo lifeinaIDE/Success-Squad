@@ -15,7 +15,7 @@ const MARQUEE_WORDS = [
 const TEASER_EVENTS = [
   { id: 'aignite',    date: 'FEB 2026', name: 'Aignite',                          tag: 'Hackathon' },
   { id: 'sprint',     date: 'OCT 2025', name: 'Startup Sprint - Hackathon',        tag: 'Hackathon' },
-  { id: 'pitch',      date: 'OCT 2025', name: 'Venture Pitch — Investor Demo Day', tag: 'Pitching'  },
+  { id: 'pitch',      date: 'OCT 2025', name: 'Venture Pitch, Investor Demo Day', tag: 'Pitching'  },
   { id: 'illuminate', date: 'OCT 2025', name: 'Illuminate 2025',                   tag: 'Workshop'  },
 ]
 
@@ -49,7 +49,7 @@ export default function Home() {
             </h1>
             <p className="hero-sub line-reveal delay-2">
               We ignite entrepreneurial spirits, nurture bold ideas, and build the founders of
-              tomorrow — right here on campus.
+              tomorrow, right here on campus.
             </p>
             <div className="hero-actions line-reveal delay-3">
               <Link to="/about" className="btn btn-primary">Discover EDC</Link>

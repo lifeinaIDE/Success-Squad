@@ -11,7 +11,7 @@ export default function About() {
       <div className="page-header">
         <div className="section-label">About Us</div>
         <h1>We are the <span className="accent">Success Squad</span></h1>
-        <p>The Success Squad is a student-led organization dedicated to building a vibrant startup culture on campus — empowering students to dream, build, and lead.</p>
+        <p>The Success Squad is a student-led organization dedicated to building a vibrant startup culture on campus, empowering students to dream, build, and lead.</p>
       </div>
 
       {/* OUR STORY */}
@@ -22,7 +22,7 @@ export default function About() {
             <h2 className="section-title">Born from a <span className="accent">spark.</span></h2>
             <p style={{ color: 'var(--text-muted)', lineHeight: '1.85', marginBottom: '20px' }}>
               Success Squad was founded with one simple belief: every student has the potential to be a founder. We started
-              as a small group of passionate students who wanted to do more than just attend lectures — we wanted to build
+              as a small group of passionate students who wanted to do more than just attend lectures, we wanted to build
               things that matter.
             </p>
             <p style={{ color: 'var(--text-muted)', lineHeight: '1.85', marginBottom: '32px' }}>

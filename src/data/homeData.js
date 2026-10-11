@@ -45,6 +45,6 @@ export const marqueeWords = [
 export const teaserEvents = [
   { id: 'aignite',     date: 'FEB 2026', name: 'Aignite',                         tag: 'Hackathon' },
   { id: 'sprint',      date: 'OCT 2025', name: 'Startup Sprint - Hackathon',       tag: 'Hackathon' },
-  { id: 'pitch',       date: 'OCT 2025', name: 'Venture Pitch — Investor Demo Day', tag: 'Pitching' },
+  { id: 'pitch',       date: 'OCT 2025', name: 'Venture Pitch, Investor Demo Day', tag: 'Pitching' },
   { id: 'illuminate',  date: 'OCT 2025', name: 'Illuminate 2025',                  tag: 'Workshop' },
 ]

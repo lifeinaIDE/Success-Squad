@@ -11,7 +11,7 @@ export default function Startups() {
       <div className="page-header">
         <div className="section-label">Startups</div>
         <h1>Born on <span className="accent">campus.</span></h1>
-        <p>These ventures were nurtured within Success Squad — proof that extraordinary things happen when students dare to build.</p>
+        <p>These ventures were nurtured within Success Squad | proof that extraordinary things happen when students dare to build.</p>
       </div>
 
       {/* PORTFOLIO */}

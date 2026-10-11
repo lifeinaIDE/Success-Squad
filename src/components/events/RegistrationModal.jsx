@@ -1,5 +1,5 @@
 /**
- * RegistrationModal — multi-event registration modal.
+ * RegistrationModal - multi-event registration modal.
  *
  * Standard flow (all events except CraftCode):
  *   Step 1 → TeamDetailsStep  (team info + validation)
@@ -117,14 +117,9 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
           <div>
             <h2 id="modal-title" className="modal-title">
               {config.name} <span className="modal-event-tag">E-Fest '26</span>
-              {config.entryFee && (
-                <span className="modal-fee-badge" aria-label={`Fee ₹${config.entryFee}`}>
-                  ₹{config.entryFee}
-                </span>
-              )}
             </h2>
             <p id="modal-desc" className="modal-sub">
-              {isExternal ? 'Unstop Registration' : `Registration Fee: ₹${config.entryFee} per team`}
+              {isExternal ? 'Unstop Registration' : 'Registration'}
             </p>
           </div>
           <button
@@ -150,7 +145,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
         </div>
 
         <div className="modal-body">
-          {/* Step 0 — Team Details (shared by all events) */}
+          {/* Step 0, Team Details (shared by all events) */}
           {step === 0 && (
             <TeamDetailsStep
               config={config}
@@ -159,7 +154,7 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
             />
           )}
 
-          {/* Step 1 — branches on registrationType */}
+          {/* Step 1, branches on registrationType */}
           {step === 1 && isExternal && (
             // CraftCode: Unstop registration flow (Section A + B)
             <CraftCodeRegistration
@@ -177,11 +172,10 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
               formData={formData}
               onSubmit={handlePaymentSubmit}
               onBack={() => setStep(0)}
-              onClose={onClose}
             />
           )}
 
-          {/* Step 2 — standard confirmation only (CraftCode stays on step 1) */}
+          {/* Step 2, standard confirmation only (CraftCode stays on step 1) */}
           {step === 2 && !isExternal && (
             <ConfirmationStep
               config={config}

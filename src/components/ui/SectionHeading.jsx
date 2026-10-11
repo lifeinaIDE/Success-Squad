@@ -1,5 +1,5 @@
 /**
- * SectionHeading — standardized section header with label + title.
+ * SectionHeading - standardized section header with label + title.
  * @param {string} label   - small ALL-CAPS label above the title
  * @param {string} title   - heading text, may contain JSX (span.accent etc.)
  * @param {string} [as]    - heading element, default "h2"

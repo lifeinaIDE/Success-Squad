@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 /**
- * Button — renders either a <Link> (internal routing) or an <a> (external).
+ * Button - renders either a <Link> (internal routing) or an <a> (external).
  * Matches the existing .btn, .btn-primary, .btn-ghost classes from style.css.
  *
  * @param {string}  to        - react-router path (renders <Link>)

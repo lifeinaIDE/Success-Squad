@@ -11,7 +11,7 @@ alter table public.pending_payments add constraint pending_payments_status_check
   check (status in ('pending', 'submitted', 'pending_unstop_review', 'verified', 'rejected', 'expired'));
 
 -- 2. Rename hackathon-24h → craftcode in event_capacities
---    (safe to run even if already renamed — use upsert pattern)
+--    (safe to run even if already renamed - use upsert pattern)
 insert into public.event_capacities (event_id, max_capacity)
   values ('craftcode', 30)
   on conflict (event_id) do nothing;

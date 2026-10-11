@@ -3,7 +3,7 @@
 // The pg_cron sweep in 001_init.sql handles server-side sweeping every minute,
 // so this function is the manual "fast path" triggered by the client.
 //
-// Does NOT require any secrets — uses service_role (auto-injected).
+// Does NOT require any secrets - uses service_role (auto-injected).
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -47,7 +47,7 @@ serve(async (req) => {
       )
     }
 
-    // Idempotent — don't overwrite paid/failed/expired
+    // Idempotent - don't overwrite paid/failed/expired
     if (data.status !== 'pending') {
       return new Response(
         JSON.stringify({ success: true, status: data.status }),

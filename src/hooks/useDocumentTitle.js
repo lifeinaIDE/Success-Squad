@@ -7,10 +7,10 @@ import { useEffect } from 'react'
 export function useDocumentTitle(title) {
   useEffect(() => {
     document.title = title
-      ? `${title} — Success Squad`
-      : 'Success Squad — Entrepreneurship Development Cell'
+      ? `${title} | Success Squad`
+      : 'Success Squad | Entrepreneurship Development Cell'
     return () => {
-      document.title = 'Success Squad — Entrepreneurship Development Cell'
+      document.title = 'Success Squad | Entrepreneurship Development Cell'
     }
   }, [title])
 }

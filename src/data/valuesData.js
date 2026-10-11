@@ -22,6 +22,6 @@ export const valuesData = [
     id: 'impact',
     num: '04',
     title: 'Impact',
-    description: 'We build not just for profit, but for purpose — solving problems that truly matter.',
+    description: 'We build not just for profit, but for purpose, solving problems that truly matter.',
   },
 ]

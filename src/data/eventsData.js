@@ -1,10 +1,10 @@
 // Upcoming events
 export const upcomingEvents = [
   {
-    id: 'ai-bootcamp',
+    id: 'illuminate-2025',
     tag: 'Workshops',
     date: 'February 18–20, 2026',
-    title: 'AI Bootcamp',
+    title: 'Illuminate 2025',
     description: 'A 3 hour workshop for students letting them deep dive in the AI world.',
     meta: ['🏫 A Building, VC Hall', '⏱ 1:00 PM', '👥 200+ Participants'],
     btnLabel: 'Register Now',

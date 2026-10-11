@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { memoriesImages } from '../../data/galleryData.js'
 
 /**
- * MemoriesSection — "Our Memories" diagonal cascade at the end of Gallery.
+ * MemoriesSection - "Our Memories" diagonal cascade at the end of Gallery.
  * Scroll behavior and card positioning match memories.js from the original site.
  */
 export default function MemoriesSection() {

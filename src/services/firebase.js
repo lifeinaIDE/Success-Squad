@@ -1,5 +1,5 @@
 /**
- * src/services/firebase.js — DELETED (migrated to Supabase)
+ * src/services/firebase.js - DELETED (migrated to Supabase)
  *
  * This file is intentionally empty.
  * All backend operations now go through src/services/supabase.js

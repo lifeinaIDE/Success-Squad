@@ -78,7 +78,7 @@ create table if not exists public.team_id_counters (
 alter table public.team_id_counters enable row level security;
 
 -- Only service_role (Edge Functions) may touch the counter.
--- No client policies needed — RLS blocks all client access by default.
+-- No client policies needed - RLS blocks all client access by default.
 
 -- ── Trigger: auto-create registration when payment is confirmed ─
 create or replace function public.handle_payment_confirmed()

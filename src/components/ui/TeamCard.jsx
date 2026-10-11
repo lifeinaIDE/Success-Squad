@@ -1,5 +1,5 @@
 /**
- * TeamCard — standard team member card (domain leads + core members).
+ * TeamCard - standard team member card (domain leads + core members).
  *
  * Avatar treatment (progressive enhancement):
  *  - If `photoUrl` exists → "sticker cutout" treatment:

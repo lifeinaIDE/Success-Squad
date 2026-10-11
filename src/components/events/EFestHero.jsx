@@ -1,9 +1,9 @@
 /**
- * EFestHero.jsx — Full-width flagship card for E-Fest '26.
+ * EFestHero.jsx - Full-width flagship card for E-Fest '26.
  *
  * "Register Now" navigates (React Router internal link) to the hidden
  * registration hub route. The slug comes from VITE_FEST_SLUG env var;
- * falls back to 'e-fest-26' — matching the same default in App.jsx.
+ * falls back to 'e-fest-26' - matching the same default in App.jsx.
  */
 import { Link } from 'react-router-dom'
 
@@ -25,7 +25,7 @@ export default function EFestHero() {
           <h2 className="efest-hero-title">E&#8209;Fest&nbsp;&#x27;26</h2>
 
           <p className="efest-hero-desc">
-            Success Squad's flagship annual festival — six high-stakes competitions,
+            Success Squad's flagship annual festival, six high-stakes competitions,
             one electrifying weekend. From BGMI battles to startup pitches, this is
             where campus energy peaks.
           </p>

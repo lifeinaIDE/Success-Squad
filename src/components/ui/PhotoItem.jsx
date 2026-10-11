@@ -1,5 +1,5 @@
 /**
- * PhotoItem — a single photo in the gallery grid.
+ * PhotoItem - a single photo in the gallery grid.
  * Clicking it opens the lightbox for its event's photo set.
  *
  * @param {string}   src      - image src

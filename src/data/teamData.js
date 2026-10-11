@@ -66,7 +66,7 @@ export const coreMembers = [
   { id: 'pratiksha',  name: 'Pratiksha Bhosale',    role: 'Core Member', image: '/images/pratiksha-bhosale.jpg',  photoUrl: null,                               linkedin: null },
   { id: 'shravani-p', name: 'Shravani Patil',       role: 'Core Member', image: null,                              photoUrl: '/images/team/shravani-patil.png',   linkedin: 'https://www.linkedin.com/in/shravani-patil-b3953a371?utm_source=share_via&utm_content=profile&utm_medium=member_android' },
   { id: 'yash',       name: 'Yash Khambekar',       role: 'Core Member', image: null,                              photoUrl: null,                               linkedin: null },
-  // New builders — joined 2026
+  // New builders - joined 2026
   { id: 'arya',       name: 'Arya Paralkar',        role: 'Builder', image: null, photoUrl: '/images/team/arya-paralkar.png',    linkedin: null },
   { id: 'sakshi',     name: 'Sakshi Jadhav',        role: 'Builder', image: null, photoUrl: '/images/team/sakshi-jadhav.png',    linkedin: null },
   { id: 'aditi',      name: 'Aditi Awagan',         role: 'Builder', image: null, photoUrl: '/images/team/aditi-awagan.png',     linkedin: null },

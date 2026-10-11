@@ -1,19 +1,21 @@
 /**
- * PaymentStep — Step 2 of RegistrationModal (Manual Verification).
+ * PaymentStep - Step 2 of RegistrationModal (Manual Verification).
  *
- * Flow:
- *  1. Initial phase is 'review': Displays the ₹199 fee and squad info clearly.
- *     Payment is NOT initiated automatically.
- *  2. User explicitly clicks "Pay ₹199 & Get QR Code" → phase transitions to 'creating'
- *     and calls holdSlot service.
- *  3. On success → phase transitions to 'active' (QR code, countdown, proof upload form).
- *  4. On error → phase transitions to 'error' with clear error messaging and options
- *     to Retry, Return to Review, or Close and return to the website.
- *  5. Users can close the modal and return to the website from any phase.
+ * FIXES applied:
+ *  - Slot is held ONCE on mount via useRef flag (no re-trigger on formData change)
+ *  - 12-second timeout in holdSlot service prevents infinite spinner
+ *  - Animated loading state with progress dots so user knows something is happening
+ *  - "Try Again" button on error
+ *  - QR code shown immediately once slot is held
+ *
+ * UI order (top to bottom in active state):
+ *   (1) QR code + UPI ID   (2) Screenshot upload   (3) Transaction ID   (4) Submit
+ *
+ * NOTE: DB column name = `utr`. All UI labels say "Transaction ID".
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { holdSlot, expireOrder, submitPaymentProof, verifyAndSavePaymentGateway } from '../../../services/registrations.js'
+import { holdSlot, expireOrder, submitPaymentProof } from '../../../services/registrations.js'
 
 function isMobile() {
   return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
@@ -25,6 +27,7 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+// Animated loading dots so the user knows something is actually happening
 function LoadingDots() {
   const [dots, setDots] = useState('')
   useEffect(() => {
@@ -34,54 +37,62 @@ function LoadingDots() {
   return <span aria-hidden="true">{dots}</span>
 }
 
-export default function PaymentStep({ config, teamName, formData, onSubmit, onBack, onClose }) {
-  // Phase starts in 'review' so payment is NOT initiated automatically
-  const [phase, setPhase]         = useState('review') // review | creating | active | submitting | expired | error
+export default function PaymentStep({ config, teamName, formData, onSubmit, onBack }) {
+  const [phase, setPhase]       = useState('creating') // creating | active | submitting | expired | error
   const [orderData, setOrderData] = useState(null)
   const [timeLeft, setTimeLeft]   = useState(300)
   const [errorMsg, setErrorMsg]   = useState('')
 
-  // Form fields for proof upload
-  const [utr, setUtr]             = useState('')
-  const [file, setFile]           = useState(null)
+  // Form fields
+  const [utr, setUtr]           = useState('')
+  const [file, setFile]         = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
-  const fileInputRef              = useRef(null)
+  const fileInputRef = useRef(null)
 
-  // ── Explicit Initiate Payment Handler ──────────────────────────────────────
-  const handleInitiatePayment = useCallback(async () => {
+  // ── Guard: run holdSlot EXACTLY ONCE on mount ──────────────────────────────
+  // Using a ref prevents re-triggering when formData object reference changes.
+  const holdCalled = useRef(false)
+
+  useEffect(() => {
+    if (holdCalled.current) return
+    holdCalled.current = true
+
+    let mounted = true
+
+    holdSlot(config.id, formData, config.entryFee)
+      .then((result) => {
+        if (!mounted) return
+        setOrderData(result)
+        setPhase('active')
+        const remaining = Math.max(
+          0,
+          Math.floor((new Date(result.expiresAt).getTime() - Date.now()) / 1000)
+        )
+        setTimeLeft(remaining)
+      })
+      .catch((err) => {
+        if (!mounted) return
+        console.error('[holdSlot]', err)
+        setErrorMsg(err?.message || 'Failed to hold slot. Please try again.')
+        setPhase('error')
+      })
+
+    return () => { mounted = false }
+  }, []) // ← intentionally empty: run once on mount only
+
+  // ── Retry: reset guard and re-trigger ─────────────────────────────────────
+  const handleRetry = useCallback(() => {
+    holdCalled.current = false
     setPhase('creating')
     setErrorMsg('')
+    setOrderData(null)
+    setTimeLeft(300)
+    setUtr('')
+    setFile(null)
+    setPreviewUrl(null)
+  }, [])
 
-    try {
-      const result = await holdSlot(config.id, formData, config.entryFee)
-      setOrderData(result)
-      setPhase('active')
-      const remaining = Math.max(
-        0,
-        Math.floor((new Date(result.expiresAt).getTime() - Date.now()) / 1000)
-      )
-      setTimeLeft(remaining)
-    } catch (err) {
-      console.error('[holdSlot error]', err)
-      const raw = err?.message || ''
-      let displayMsg = 'Failed to reserve registration slot. Please try again.'
-
-      if (raw.includes('Database service is not configured') || raw.includes('Supabase is not configured')) {
-        displayMsg = 'Registration service is temporarily unavailable (database is not configured). Please verify your connection or contact event organizers.'
-      } else if (raw.toLowerCase().includes('timeout') || raw.toLowerCase().includes('timed out')) {
-        displayMsg = 'Request timed out while securing your slot. Please check your internet connection and try again.'
-      } else if (raw.toLowerCase().includes('sold out')) {
-        displayMsg = `Registration for ${config.name} is currently full / sold out.`
-      } else if (raw) {
-        displayMsg = raw
-      }
-
-      setErrorMsg(displayMsg)
-      setPhase('error')
-    }
-  }, [config.id, config.name, config.entryFee, formData])
-
-  // ── Countdown timer (only active during 'active' phase) ─────────────────────
+  // ── Countdown timer ────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'active' || !orderData) return
 
@@ -114,46 +125,16 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
   const handleSubmitProof = async (e) => {
     e.preventDefault()
     if (!file)       { setErrorMsg('Please upload your payment screenshot.'); return }
-    if (!utr.trim()) { setErrorMsg('Please enter your Transaction ID (UTR).'); return }
+    if (!utr.trim()) { setErrorMsg('Please enter your Transaction ID.');       return }
 
     setPhase('submitting')
     setErrorMsg('')
     try {
-      const screenshotUrl = await submitPaymentProof(orderData.orderId, config.id, utr.trim(), file)
-
-      // Verify payment with payment gateway and save registration & payment in Supabase
-      let verifiedResult = null
-      try {
-        verifiedResult = await verifyAndSavePaymentGateway({
-          orderId: orderData.orderId,
-          utr: utr.trim(),
-          eventId: config.id,
-          teamData: formData,
-          amountINR: config.entryFee,
-          paymentMethod: 'UPI / Online Payment Gateway',
-          screenshotUrl,
-        })
-      } catch (gateErr) {
-        console.warn('Gateway verification notice:', gateErr)
-      }
-
-      onSubmit({
-        orderId: orderData.orderId,
-        utr: utr.trim(),
-        eventId: config.id,
-        team_data: formData,
-        amount_inr: config.entryFee,
-        status: verifiedResult ? 'verified' : 'submitted',
-        payment_status: verifiedResult ? 'PAID' : 'PENDING',
-        team_id: verifiedResult?.team_id || null,
-        registration_id: verifiedResult?.team_id || null,
-        receipt_number: verifiedResult?.receipt_number || null,
-        created_at: new Date().toISOString(),
-        verified_at: verifiedResult?.verified_at || null,
-      })
+      await submitPaymentProof(orderData.orderId, config.id, utr.trim(), file)
+      onSubmit({ orderId: orderData.orderId })
     } catch (err) {
-      console.error('[submitProof error]', err)
-      setErrorMsg(err?.message || 'Failed to submit payment proof. Please try again.')
+      console.error('[submitProof]', err)
+      setErrorMsg(err?.message || 'Failed to submit proof. Please try again.')
       setPhase('active')
     }
   }
@@ -170,94 +151,25 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
 
   return (
     <div className="reg-form">
-      {/* ── PHASE 1: PRE-PAYMENT REVIEW (Clear ₹199 Fee Display, Manual Initiation) ── */}
-      {phase === 'review' && (
-        <div className="payment-review-pane">
-          <div className="payment-fee-card">
-            <span className="fee-card-badge">Registration Summary</span>
-            <div className="fee-card-amount">
-              ₹{config.entryFee}
-              <span className="fee-card-period">/ squad</span>
-            </div>
-            <p className="fee-card-desc">
-              Entry fee for <strong>{config.name}</strong> (E-Fest '26). Includes all squad members.
-            </p>
-          </div>
+      <h3 className="reg-step-title">Payment</h3>
 
-          <div className="payment-summary" style={{ marginTop: 16 }}>
-            <div className="payment-summary-row">
-              <span>Event</span>
-              <strong>{config.name}</strong>
-            </div>
-            <div className="payment-summary-row">
-              <span>Team Name</span>
-              <strong>{teamName || formData?.teamName || '—'}</strong>
-            </div>
-            <div className="payment-summary-row">
-              <span>Team Leader</span>
-              <strong>{formData?.leaderName} ({formData?.leaderPhone})</strong>
-            </div>
-            {formData?.leaderEmail && (
-              <div className="payment-summary-row">
-                <span>Leader Email</span>
-                <strong>{formData.leaderEmail}</strong>
-              </div>
-            )}
-            <div className="payment-summary-row payment-summary-total">
-              <span>Total Payable</span>
-              <strong className="accent" style={{ fontSize: '1.25rem' }}>₹{config.entryFee}</strong>
-            </div>
-          </div>
-
-          <div className="payment-review-note" style={{
-            background: 'rgba(99,102,241,0.06)',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: 8,
-            padding: '12px 16px',
-            fontSize: '0.82rem',
-            color: 'var(--text-muted)',
-            margin: '16px 0',
-            lineHeight: 1.5,
-          }}>
-            ℹ️ <strong>Ready to pay?</strong> Clicking <em>Proceed to Pay</em> will reserve your squad's slot for 5 minutes and generate the official UPI payment QR code.
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleInitiatePayment}
-              id="initiate-payment-btn"
-              style={{ width: '100%', padding: '14px 20px', fontSize: '1rem', fontWeight: 700 }}
-            >
-              Proceed to Pay ₹{config.entryFee} →
-            </button>
-
-            <div className="reg-footer-actions" style={{ marginTop: 6 }}>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={onBack}
-                id="review-back-btn"
-              >
-                ← Back to Team Details
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={onClose}
-                id="review-close-btn"
-              >
-                Close & Return to Website
-              </button>
-            </div>
-          </div>
+      {/* Order summary */}
+      <div className="payment-summary">
+        <div className="payment-summary-row">
+          <span>Event</span><strong>{config.name}</strong>
         </div>
-      )}
+        <div className="payment-summary-row">
+          <span>Team</span><strong>{teamName || '-'}</strong>
+        </div>
+        <div className="payment-summary-row payment-summary-total">
+          <span>Amount</span><strong>₹{config.entryFee}</strong>
+        </div>
+      </div>
 
-      {/* ── PHASE 2: CREATING (Explicit Slot Reservation In Progress) ── */}
+      {/* ── CREATING: animated loading ── */}
       {phase === 'creating' && (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          {/* Pulsing circle */}
           <div style={{
             width: 56, height: 56,
             borderRadius: '50%',
@@ -266,88 +178,31 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
             margin: '0 auto 20px',
             animation: 'spin 0.8s linear infinite',
           }} aria-hidden="true" />
-          <h4 style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: 8 }}>
+          <p style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 6 }}>
             Securing your spot<LoadingDots />
-          </h4>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: 320, margin: '0 auto 20px', lineHeight: 1.6 }}>
-            Reserving your spot for <strong>{config.name}</strong> (₹{config.entryFee}). Generating your payment session…
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setPhase('review')}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-            >
-              Close & Return to Website
-            </button>
-          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', maxWidth: 280, margin: '0 auto' }}>
+            We're reserving your slot for 5 minutes. This usually takes a second.
+          </p>
         </div>
       )}
 
-      {/* ── PHASE 3: ERROR (Clear message, Retry & Exit options) ── */}
+      {/* ── ERROR ── */}
       {phase === 'error' && (
-        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+        <div style={{ textAlign: 'center', padding: '36px 0' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚠️</div>
-          <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: 8, color: '#f87171' }}>
-            Registration Error
-          </h4>
-          <div
-            className="reg-error-network"
-            role="alert"
-            style={{ marginBottom: 24, maxWidth: 440, margin: '0 auto 24px', textAlign: 'left', lineHeight: 1.6 }}
-          >
+          <p className="reg-error" role="alert" style={{ marginBottom: 20, maxWidth: 340, margin: '0 auto 20px' }}>
             {errorMsg}
-          </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleInitiatePayment}
-              id="payment-retry-btn"
-            >
-              ↻ Try Again
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setPhase('review')}
-            >
-              ← Back to Review
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              id="payment-error-close-btn"
-            >
-              Close & Return to Website
-            </button>
-          </div>
+          </p>
+          <button type="button" className="btn btn-primary" onClick={handleRetry}>
+            ↻ Try Again
+          </button>
         </div>
       )}
 
-      {/* ── PHASE 4: ACTIVE / SUBMITTING (QR + Proof Form) ── */}
+      {/* ── ACTIVE / SUBMITTING: QR + form ── */}
       {(phase === 'active' || phase === 'submitting') && orderData && (
-        <div style={{ marginTop: 10 }}>
-          {/* Order summary bar */}
-          <div className="payment-summary" style={{ marginBottom: 16 }}>
-            <div className="payment-summary-row">
-              <span>Event</span><strong>{config.name}</strong>
-            </div>
-            <div className="payment-summary-row">
-              <span>Team</span><strong>{teamName || '—'}</strong>
-            </div>
-            <div className="payment-summary-row payment-summary-total">
-              <span>Amount</span><strong className="accent">₹{config.entryFee}</strong>
-            </div>
-          </div>
+        <div style={{ marginTop: 20 }}>
 
           {/* Countdown */}
           <div
@@ -365,10 +220,10 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
             {formatTime(timeLeft)}
           </div>
           <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 20 }}>
-            {isUrgent ? '⚠️ Less than a minute left! Complete payment and submit proof.' : 'Slot reserved — scan UPI QR to pay ₹' + config.entryFee + ' and submit proof below'}
+            {isUrgent ? '⚠️ Less than a minute left! Submit now.' : 'Slot held, complete payment and submit proof below'}
           </p>
 
-          {/* (1) QR + UPI ID */}
+          {/* (1) QR + UPI */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div style={{
               display: 'inline-block',
@@ -390,12 +245,12 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
             </p>
             {isMobile() && (
               <a href={intentLink} className="btn btn-secondary" style={{ display: 'inline-block', marginBottom: 4 }}>
-                📱 Pay via UPI App (₹{config.entryFee})
+                📱 Pay via UPI App
               </a>
             )}
           </div>
 
-          {/* (2) Proof form */}
+          {/* (2) + (3) Proof form */}
           <form onSubmit={handleSubmitProof} style={{
             background: 'rgba(255,255,255,0.03)',
             padding: 20,
@@ -406,7 +261,7 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
 
             {/* Screenshot */}
             <div className="form-group">
-              <label htmlFor="screenshot">Payment Screenshot <span aria-hidden="true">*</span></label>
+              <label htmlFor="screenshot">Payment Screenshot</label>
               <input
                 ref={fileInputRef}
                 id="screenshot"
@@ -429,7 +284,7 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
 
             {/* Transaction ID */}
             <div className="form-group" style={{ marginTop: 16 }}>
-              <label htmlFor="utr">Transaction ID (UTR) <span aria-hidden="true">*</span></label>
+              <label htmlFor="utr">Transaction ID</label>
               <input
                 id="utr"
                 type="text"
@@ -441,7 +296,7 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
                 className="form-input"
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                Found in your UPI app under transaction details.
+                Found in your UPI app under transaction history.
               </p>
             </div>
 
@@ -454,41 +309,38 @@ export default function PaymentStep({ config, teamName, formData, onSubmit, onBa
               style={{ width: '100%', marginTop: 8 }}
             >
               {phase === 'submitting'
-                ? <><span className="reg-spinner" aria-hidden="true" /> Submitting Proof…</>
+                ? <><span className="reg-spinner" aria-hidden="true" /> Submitting…</>
                 : 'Submit Proof'}
             </button>
           </form>
-
-          <div className="reg-footer-actions" style={{ marginTop: 20 }}>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={onClose}
-            >
-              Close & Return to Website
-            </button>
-          </div>
         </div>
       )}
 
-      {/* ── PHASE 5: EXPIRED ── */}
+      {/* ── EXPIRED ── */}
       {phase === 'expired' && (
         <div style={{ textAlign: 'center', padding: '36px 0' }}>
           <div style={{ fontSize: '2rem', marginBottom: 12 }}>⏰</div>
-          <p style={{ color: '#ef4444', marginBottom: 16, fontSize: '1rem', fontWeight: 600 }}>
-            Time expired — your slot hold was released.
+          <p style={{ color: '#ef4444', marginBottom: 16, fontSize: '1rem' }}>
+            Time expired, your slot hold was released.
           </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <button type="button" className="btn btn-primary" onClick={handleInitiatePayment}>
-              ↻ Try Again
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Close & Return to Website
-            </button>
-          </div>
+          <button type="button" className="btn btn-primary" onClick={handleRetry}>
+            ↻ Try Again
+          </button>
         </div>
       )}
+
+      {/* Back button, only available before slot is held */}
+      <div className="reg-footer-actions" style={{ marginTop: 24 }}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={onBack}
+          disabled={phase === 'active' || phase === 'submitting'}
+          style={{ opacity: (phase === 'active' || phase === 'submitting') ? 0.3 : 1 }}
+        >
+          ← Back
+        </button>
+      </div>
     </div>
   )
 }
-

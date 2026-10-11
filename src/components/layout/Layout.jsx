@@ -2,10 +2,9 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
-import Chatbot from '../chat/Chatbot.jsx'
 
 /**
- * Layout — wraps every page with Navbar, Footer, and SquadAI Chatbot.
+ * Layout - wraps every page with Navbar and Footer.
  * Scrolls to top on route change.
  */
 export default function Layout() {
@@ -22,7 +21,6 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <Chatbot />
     </>
   )
 }

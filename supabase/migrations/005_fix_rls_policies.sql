@@ -16,7 +16,7 @@
 --        - Allow anon to UPDATE their own row (submitPaymentProof)
 --        - Allow anon to SELECT their own row (order status lookup)
 --        - Block anon from reading anyone else's rows
---   3. Keep admin (service_role) unrestricted — it bypasses RLS by default.
+--   3. Keep admin (service_role) unrestricted - it bypasses RLS by default.
 -- ============================================================
 
 -- ── 1. Enable RLS on tables (idempotent) ────────────────────────────────────
@@ -56,14 +56,14 @@ create policy "anon_select_own_pending"
   to anon, authenticated
   using (true);        -- scoped by order_id in the query itself
 
--- ── 4. event_capacities — public read ────────────────────────────────────────
+-- ── 4. event_capacities - public read ────────────────────────────────────────
 create policy "anon_read_event_capacities"
   on public.event_capacities
   for select
   to anon, authenticated
   using (true);
 
--- ── 5. registrations — public read (needed for StatusLookup by team_id) ──────
+-- ── 5. registrations - public read (needed for StatusLookup by team_id) ──────
 create policy "anon_read_registrations"
   on public.registrations
   for select

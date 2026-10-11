@@ -1,7 +1,7 @@
 import { Component } from 'react'
 
 /**
- * ErrorBoundary — catches any render error in the subtree and shows
+ * ErrorBoundary - catches any render error in the subtree and shows
  * a fallback instead of a completely blank screen.
  */
 export default class ErrorBoundary extends Component {
@@ -27,36 +27,52 @@ export default class ErrorBoundary extends Component {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0a0a0f',
-          color: '#fff',
-          fontFamily: 'Inter, sans-serif',
+          background: 'var(--bg)',
+          color: 'var(--text)',
+          fontFamily: 'var(--font-body)',
           padding: '40px',
           textAlign: 'center',
           gap: '16px',
         }}>
-          <div style={{ fontSize: '3rem' }}>⚠️</div>
-          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.8rem', fontWeight: 800 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent)' }}>
             Something went wrong
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.55)', maxWidth: '480px', lineHeight: 1.7 }}>
-            {this.state.message}
+          <p style={{ color: 'var(--text-muted)', maxWidth: '480px', lineHeight: 1.7, marginBottom: '24px' }}>
+            Please refresh the page or try again in a few minutes.
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: '8px',
-              padding: '12px 28px',
-              background: '#6366f1',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '50px',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Reload Page
-          </button>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 28px',
+                background: 'var(--accent)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50px',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Refresh
+            </button>
+            <a
+              href="/"
+              style={{
+                padding: '12px 28px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: '50px',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textDecoration: 'none'
+              }}
+            >
+              Back to Home
+            </a>
+          </div>
         </div>
       )
     }

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 /**
- * EventCard — upcoming event card. highlight prop adds the accent border treatment.
+ * EventCard - upcoming event card. highlight prop adds the accent border treatment.
  */
 export default function EventCard({ tag, date, title, description, meta = [], btnLabel, btnClass, highlight = false }) {
   return (

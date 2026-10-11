@@ -1,12 +1,12 @@
 /**
- * TeamDetailsStep — Step 1 of RegistrationModal.
+ * TeamDetailsStep - Step 1 of RegistrationModal.
  *
  * Collects: Leader Name, Leader Phone, Leader Email, Team Name,
  *           Member 2/3/4 Name + Email (OPTIONAL).
  *
  * Validation:
  *  - Leader Name, Leader Phone, Leader Email, Team Name: REQUIRED
- *  - Member 2/3/4 Name + Email: OPTIONAL — form is valid with only leader filled
+ *  - Member 2/3/4 Name + Email: OPTIONAL - form is valid with only leader filled
  *  - If a member field is partially filled (name given but no email, or vice versa),
  *    validate the provided sub-field but do NOT require the other.
  *    This keeps data consistent: either both fields are null or both are meaningful.
@@ -16,7 +16,7 @@
  *  - Inline per-field errors shown on blur or on submit attempt
  *
  * Note: This component is shared by ALL multi-member team events (BGMI LEC, FFLEC,
- *       CraftCode, IPL Auction, Startup Pitch, Money Makers) via eventConfigs.js config —
+ *       CraftCode, IPL Auction, Startup Pitch, Money Makers) via eventConfigs.js config - 
  *       not duplicated per-event.
  */
 
@@ -26,7 +26,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_RE = /^[6-9]\d{9}$/
 
 /**
- * Validate form values. Members are optional — only validate if any data entered.
+ * Validate form values. Members are optional - only validate if any data entered.
  * If name is provided for a member, email must be valid (and vice versa).
  */
 function validate(values) {
@@ -124,18 +124,8 @@ export default function TeamDetailsStep({ config, initialData, onSubmit }) {
 
   return (
     <form className="reg-form" onSubmit={handleSubmit} noValidate>
-      <div className="reg-header-row">
-        <div>
-          <h3 className="reg-step-title">Team Details</h3>
-          <p className="reg-step-sub">Fill in your team information to proceed to payment.</p>
-        </div>
-        {config.entryFee && (
-          <div className="reg-fee-badge-pill" id="team-details-fee-badge" aria-label={`Registration Fee ₹${config.entryFee}`}>
-            <span className="fee-pill-label">Registration Fee</span>
-            <span className="fee-pill-amount">₹{config.entryFee}</span>
-          </div>
-        )}
-      </div>
+      <h3 className="reg-step-title">Team Details</h3>
+      <p className="reg-step-sub">Fill in your team information to proceed to payment.</p>
 
       {/* Leader */}
       <fieldset className="reg-fieldset">
@@ -242,19 +232,12 @@ export default function TeamDetailsStep({ config, initialData, onSubmit }) {
         </fieldset>
       ))}
 
-      {config.entryFee && (
-        <div className="reg-fee-summary-strip">
-          <span>Registration Fee for {config.name}:</span>
-          <strong className="accent" style={{ fontSize: '1.15rem' }}>₹{config.entryFee}</strong>
-        </div>
-      )}
-
       <button
         type="submit"
         className="btn btn-primary reg-submit"
         id="team-details-next"
       >
-        Continue to Payment Review (₹{config.entryFee}) →
+        Continue to Payment →
       </button>
     </form>
   )

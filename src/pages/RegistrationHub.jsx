@@ -1,12 +1,12 @@
 /**
- * RegistrationHub.jsx — Hidden E-Fest '26 registration hub.
+ * RegistrationHub.jsx - Hidden E-Fest '26 registration hub.
  *
  * ⚠️  SECURITY NOTE (obscurity, not access control):
  *     This page is "hidden" only in the sense that:
  *       - It's not linked from any nav, footer, or sitemap
  *       - Its route slug is a non-guessable token stored in VITE_FEST_SLUG
  *       - It carries <meta name="robots" content="noindex,nofollow" />
- *     HOWEVER — anyone with the URL (via browser history, shared screenshot,
+ *     HOWEVER - anyone with the URL (via browser history, shared screenshot,
  *     or JS bundle inspection) CAN reach this page. There is NO real access
  *     control gate here.
  *
@@ -32,7 +32,7 @@ export default function RegistrationHub() {
     <>
       {/* noindex/nofollow so search engines never index this page */}
       <Helmet>
-        <title>E-Fest '26 — Register</title>
+        <title>E-Fest '26, Register</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="description" content="E-Fest '26 event registration hub." />
       </Helmet>
@@ -59,7 +59,7 @@ export default function RegistrationHub() {
         </div>
       </div>
 
-      {/* Registration modal — only mounts when an event is selected */}
+      {/* Registration modal, only mounts when an event is selected */}
       <RegistrationModal
         eventId={activeEventId}
         isOpen={!!activeEventId}

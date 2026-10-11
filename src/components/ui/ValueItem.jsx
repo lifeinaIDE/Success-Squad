@@ -1,5 +1,5 @@
 /**
- * ValueItem — a single "Our Values" entry on the About page.
+ * ValueItem - a single "Our Values" entry on the About page.
  */
 export default function ValueItem({ num, title, description }) {
   return (

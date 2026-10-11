@@ -4,7 +4,7 @@ import { useScrolled } from '../../hooks/useScrolled.js'
 import { navLinks } from '../../data/navData.js'
 
 /**
- * Navbar — single source of truth for site navigation.
+ * Navbar - single source of truth for site navigation.
  *
  * Hamburger behaviors preserved from main.js:
  *  1. Click-outside-to-close

@@ -1,5 +1,5 @@
 /**
- * StartupCard — portfolio card for the Startups page.
+ * StartupCard - portfolio card for the Startups page.
  */
 export default function StartupCard({ logoText, tag, name, description, website, websiteLabel }) {
   return (

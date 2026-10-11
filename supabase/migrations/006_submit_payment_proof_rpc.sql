@@ -2,7 +2,7 @@
 -- 006_submit_payment_proof_rpc.sql
 -- ============================================================
 -- Creates a SECURITY DEFINER RPC for submitting payment proof.
--- This bypasses RLS entirely — the client never touches the table directly.
+-- This bypasses RLS entirely - the client never touches the table directly.
 -- Called by registrations.js → submitPaymentProof()
 -- ============================================================
 

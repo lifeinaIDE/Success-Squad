@@ -1,5 +1,5 @@
 /**
- * StatusLookup.jsx — Public (but unlisted/noindex) status check page.
+ * StatusLookup.jsx - Public (but unlisted/noindex) status check page.
  *
  * Registrants enter their Team ID to check:
  *   - "Pending"  → waiting for admin verification
@@ -17,147 +17,99 @@
 import { useState } from 'react'
 import { Helmet }   from 'react-helmet-async'
 import { getRegistrationByTeamId } from '../services/registrations.js'
-import { generateReceipt, printReceipt } from '../utils/generateReceipt.js'
+import ReceiptGate from '../components/ui/ReceiptGate.jsx'
+import { useReceiptDownload } from '../hooks/useReceiptDownload.js'
 
-function ReceiptCard({ reg }) {
-  const [downloading, setDownloading] = useState(false)
-  const [printing, setPrinting]       = useState(false)
-  const [dlError, setDlError]         = useState('')
-
-  const isVerified = reg.status === 'confirmed' || reg.status === 'verified' || reg.payment_status === 'PAID'
+function ReceiptCard({ reg, onDownloadComplete }) {
+  const { downloadReceipt, downloading, error } = useReceiptDownload()
+  const isVerified = reg.status === 'confirmed' || reg.status === 'verified'
+  const [downloadVal, setDownloadVal] = useState('')
 
   const handleDownload = async () => {
-    if (!isVerified) {
-      setDlError('Official PAID receipts are only available after payment verification by the payment gateway.')
-      return
-    }
-    setDownloading(true)
-    setDlError('')
-    try {
-      await generateReceipt(reg)
-    } catch (err) {
-      console.error(err)
-      setDlError(err.message || 'Failed to generate receipt. Please try again.')
-    } finally {
-      setDownloading(false)
+    if (!downloadVal) return
+    const success = await downloadReceipt(reg.team_id, downloadVal)
+    if (success && onDownloadComplete) {
+      onDownloadComplete()
     }
   }
 
-  const handlePrint = async () => {
-    if (!isVerified) {
-      setDlError('Official PAID receipts can only be printed after payment verification by the payment gateway.')
-      return
-    }
-    setPrinting(true)
-    setDlError('')
-    try {
-      await printReceipt(reg)
-    } catch (err) {
-      console.error(err)
-      setDlError(err.message || 'Failed to prepare print preview. Please try again.')
-    } finally {
-      setPrinting(false)
-    }
+  // If verified but not downloaded, show the Gate
+  if (isVerified && !reg.receipt_downloaded_at) {
+    return <ReceiptGate registration={reg} onDownloaded={onDownloadComplete} />
   }
-
-  const idToShow = reg.team_id || reg.registration_id || reg.order_id || '—'
 
   return (
     <div className="receipt-wrap" id="printable-receipt">
       <div className="receipt-card">
         <div className="receipt-header">
           <span className="section-label">E-Fest '26 · Success Squad</span>
-          <h2 className="receipt-title">
-            {isVerified ? 'Registration Confirmed & Verified' : 'Payment Received · Verification in Progress'}
-          </h2>
+          <h2 className="receipt-title">Registration Confirmed</h2>
         </div>
 
         <div className="receipt-grid">
-          <div className="receipt-row"><span>{reg.team_id ? 'Registration ID' : 'Order ID'}</span><strong>{idToShow}</strong></div>
-          <div className="receipt-row"><span>Team Name</span><strong>{reg.team_data?.teamName ?? '—'}</strong></div>
-          <div className="receipt-row"><span>Leader</span><strong>{reg.team_data?.leaderName ?? '—'}</strong></div>
+          <div className="receipt-row"><span>Team ID</span><strong>{reg.team_id}</strong></div>
+          <div className="receipt-row"><span>Team Name</span><strong>{reg.team_data?.teamName ?? '-'}</strong></div>
+          <div className="receipt-row"><span>Leader</span><strong>{reg.team_data?.leaderName ?? '-'}</strong></div>
           <div className="receipt-row"><span>Event</span><strong>{reg.event_id}</strong></div>
           <div className="receipt-row">
             <span>Status</span>
-            <strong className={`status-badge status-${isVerified ? 'verified' : 'pending'}`}>
-              {isVerified ? 'VERIFIED · PAID ✓' : 'PENDING GATEWAY REVIEW ⏳'}
-            </strong>
+            <strong className={`status-badge status-${reg.status}`}>{reg.status}</strong>
           </div>
-          <div className="receipt-row">
-            <span>{reg.verified_at ? 'Verified On' : 'Submitted On'}</span>
-            <strong>
-              {new Date(reg.verified_at || reg.created_at || Date.now()).toLocaleDateString('en-IN', {
-                day: '2-digit', month: 'short', year: 'numeric'
-              })}
-            </strong>
-          </div>
-          <div className="receipt-row">
-            <span>Transaction ID</span>
-            <strong style={{ wordBreak: 'break-all' }}>{reg.utr ?? '—'}</strong>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ marginTop: 24 }}>
-          {isVerified ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <button
-                className="btn btn-primary"
-                onClick={handleDownload}
-                disabled={downloading}
-                id="lookup-download-receipt-btn"
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  padding: '12px 16px',
-                  fontWeight: 700,
-                }}
-              >
-                {downloading ? 'Generating PDF…' : '⬇ Download Receipt (PDF)'}
-              </button>
-
-              <button
-                className="btn btn-secondary"
-                onClick={handlePrint}
-                disabled={printing}
-                id="lookup-print-receipt-btn"
-                style={{
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  padding: '12px 16px',
-                  fontWeight: 700,
-                }}
-              >
-                {printing ? 'Preparing…' : '🖨️ Print Receipt'}
-              </button>
-            </div>
-          ) : (
-            <div
-              style={{
-                padding: '14px 16px',
-                background: 'rgba(245, 158, 11, 0.08)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: 8,
-                textAlign: 'center',
-              }}
-            >
-              <p style={{ fontSize: '0.86rem', color: '#fbbf24', margin: 0, fontWeight: 600 }}>
-                ⏳ Payment Gateway Verification in Progress
-              </p>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6, marginBottom: 0 }}>
-                Official PAID receipts are unlocked only after payment verification is confirmed by the payment gateway.
-              </p>
+          {reg.verified_at && (
+            <div className="receipt-row">
+              <span>Verified On</span>
+              <strong>
+                {new Date(reg.verified_at).toLocaleDateString('en-IN', {
+                  day: '2-digit', month: 'short', year: 'numeric'
+                })}
+              </strong>
             </div>
           )}
-
-          {dlError && <p className="reg-error" style={{ marginTop: 10 }}>{dlError}</p>}
+          <div className="receipt-row">
+            <span>Transaction ID</span>
+            <strong style={{ wordBreak: 'break-all' }}>{reg.utr ?? '-'}</strong>
+          </div>
         </div>
+
+        {/* Download Receipt, visible and active ONLY once verified and already downloaded once */}
+        {isVerified ? (
+          <div style={{ marginTop: 24, padding: '16px', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+            <p style={{ fontSize: '0.88rem', marginBottom: '12px' }}>Download your official receipt PDF again:</p>
+            <input 
+              type="text" 
+              placeholder="Leader Email or Phone (last 4)" 
+              value={downloadVal}
+              onChange={(e) => setDownloadVal(e.target.value)}
+              style={{ width: '100%', marginBottom: '12px', padding: '8px' }}
+              disabled={downloading}
+            />
+            <button
+              className="btn btn-primary"
+              onClick={handleDownload}
+              disabled={downloading || !downloadVal}
+              id="download-receipt-btn"
+              style={{ width: '100%' }}
+            >
+              {downloading ? 'Downloading…' : '⬇ Download Receipt (PDF)'}
+            </button>
+            {error && <p className="reg-error" style={{ marginTop: 8 }}>{error}</p>}
+          </div>
+        ) : (
+          <div style={{ marginTop: 24 }}>
+            <button
+              className="btn btn-ghost"
+              disabled
+              id="download-receipt-btn-locked"
+              style={{ width: '100%', opacity: 0.45, cursor: 'not-allowed' }}
+              aria-label="Receipt download unavailable until payment is verified"
+            >
+              🔒 Receipt Available After Verification
+            </button>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
+              Your payment is being reviewed. Come back once verified.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -193,7 +145,7 @@ export default function StatusLookup() {
   return (
     <>
       <Helmet>
-        <title>Check Registration Status — E-Fest '26</title>
+        <title>Check Registration Status, E-Fest '26</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
@@ -230,14 +182,30 @@ export default function StatusLookup() {
             <div className="status-not-found">
               <p>No registration found for <strong>{teamId.trim().toUpperCase()}</strong>.</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: 8 }}>
-                Double-check your Team ID — it was shown on your confirmation screen (e.g. BGMI-00001, CRAFT-00001).
+                Double-check your Team ID, it was shown on your confirmation screen (e.g. BGMI-00001, CRAFT-00001).
               </p>
             </div>
           )}
 
           {result && (
             <div className="status-result" aria-live="polite">
-              <ReceiptCard reg={result} />
+              {result.status === 'pending' || result.status === 'submitted' ? (
+                <div className="status-pending-box">
+                  <span className="status-badge status-pending" style={{ fontSize: '1rem' }}>Pending Verification</span>
+                  <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>
+                    Your registration for <strong>{result.team_data?.teamName ?? result.team_id}</strong> ({result.event_id}) is received.
+                    Our team will verify your payment shortly. Check back here for your Team ID.
+                  </p>
+                </div>
+              ) : (
+                <ReceiptCard 
+                  reg={result} 
+                  onDownloadComplete={() => {
+                    // Update local state to hide the gate
+                    setResult({ ...result, receipt_downloaded_at: new Date().toISOString() })
+                  }} 
+                />
+              )}
             </div>
           )}
         </div>
