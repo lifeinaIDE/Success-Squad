@@ -2180,3 +2180,135 @@ a, button, .nav-link, .btn {
   }
 }
 
+
+
+/* ============================================================
+   SPONSORS PAGE
+   ============================================================ */
+
+/* ---- Section wrapper ---- */
+.sponsors-section {
+  background: var(--bg);
+}
+
+/* ---- Two-column card grid ---- */
+.sponsors-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+/* ---- Individual sponsor card ---- */
+.sponsor-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sponsor-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(99,102,241,0.08);
+}
+
+/* ---- Logo container ---- */
+.sponsor-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 48px;
+  border-bottom: 1px solid var(--border);
+  min-height: 200px;
+}
+
+/* Light background for logos that need contrast against the dark card */
+.sponsor-logo-wrap--light {
+  background: #f0f4f8;
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}
+
+.sponsor-logo {
+  max-width: 100%;
+  max-height: 140px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ---- Card body ---- */
+.sponsor-body {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.sponsor-category {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.sponsor-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin: 4px 0 0;
+}
+
+.sponsor-tagline {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--accent-2);
+  letter-spacing: 0.3px;
+}
+
+.sponsor-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.75;
+  margin-top: 8px;
+}
+
+/* ---- Responsive: tablet (single column) ---- */
+@media (max-width: 900px) {
+  .sponsors-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .sponsor-logo-wrap {
+    padding: 32px 40px;
+    min-height: 160px;
+  }
+}
+
+/* ---- Responsive: mobile ---- */
+@media (max-width: 600px) {
+  .sponsor-logo-wrap {
+    padding: 24px 28px;
+    min-height: 130px;
+  }
+
+  .sponsor-logo {
+    max-height: 110px;
+  }
+
+  .sponsor-body {
+    padding: 24px;
+  }
+
+  .sponsor-name {
+    font-size: 1.35rem;
+  }
+}

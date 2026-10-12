@@ -6,4 +6,5 @@ export const navLinks = [
   { id: 'events',   label: 'Events',   to: '/events' },
   { id: 'startups', label: 'Startups', to: '/startups' },
   { id: 'gallery',  label: 'Gallery',  to: '/gallery' },
+  { id: 'sponsors', label: 'Sponsors', to: '/sponsors' },
 ]
