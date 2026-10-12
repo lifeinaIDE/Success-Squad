@@ -49,7 +49,7 @@ const EVENT_NAMES = {
   'craftcode':     'CraftCode',
   'ipl-auction':   'IPL Auction',
   'startup-pitch': 'Startup Pitch Battle',
-  'money-makers':  'Money Makers',
+  'money-makers':  'Illuminate Workshop',
 }
 
 function resolveEventName(eventId) {

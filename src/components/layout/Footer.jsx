@@ -42,12 +42,13 @@ export default function Footer() {
         </div>
 
         <div className="footer-social">
-          {socialData.map(({ id, label, href, target }) => (
+          {socialData.map(({ id, label, href, target, ariaLabel }) => (
             <a
               key={id}
               href={href}
               target={target}
               rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+              aria-label={ariaLabel}
               className="social-pill"
             >
               {label}

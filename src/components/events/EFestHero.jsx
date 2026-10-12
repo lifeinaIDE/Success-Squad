@@ -10,10 +10,11 @@ import { Link } from 'react-router-dom'
 import FlipCountdown, {
   REGISTRATION_DEADLINE,
   isRegistrationClosed,
+  REGISTRATION_URL,
 } from './FlipCountdown.jsx'
 
-const FEST_SLUG          = import.meta.env.VITE_FEST_SLUG || 'e-fest-26'
-const HUB_PATH           = `/fest/${FEST_SLUG}`
+export { REGISTRATION_URL }
+
 const EFEST_EVENTS_COUNT = 6
 
 /**
@@ -71,8 +72,8 @@ export default function EFestHero() {
               // Open state: fully clickable internal SPA link
               <Link
                 id="efest-register-btn"
-                to={HUB_PATH}
-                className="btn btn-primary"
+                to={REGISTRATION_URL}
+                className="btn btn-primary btn-gold"
               >
                 Register Now →
               </Link>
@@ -104,7 +105,7 @@ export default function EFestHero() {
           <div className="efest-hero-stat" aria-label={`${EFEST_EVENTS_COUNT} Events`}>
             <span className="efest-stat-num">{EFEST_EVENTS_COUNT}</span>
             <span className="efest-stat-label">Events</span>
-            <span className="efest-stat-sub">BGMI · FFLEC · CraftCode · IPL Auction · Pitch · Money Makers</span>
+            <span className="efest-stat-sub">BGMI · FFLEC · CraftCode · IPL Auction · Pitch · Illuminate Workshop</span>
           </div>
 
           {/* Flip-clock Countdown Timer using the shared deadline */}

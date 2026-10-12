@@ -110,8 +110,9 @@ export const eventConfigs = {
 
   'money-makers': {
     id:           'money-makers',
-    name:         'Money Makers',
-    tagline:      'Trade, invest, and multiply your virtual portfolio.',
+    name:         'Illuminate Workshop',
+    // TODO: update the Illuminate Workshop description.
+    tagline:      'Learn, build and get inspired. Hands-on workshop with industry experts.',
     teamSize:     4,
     entryFee:     249,
     upiId:        '9404337568@upi',

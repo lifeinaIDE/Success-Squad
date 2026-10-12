@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import { useCounter } from '../hooks/useCounter.js'
@@ -5,6 +6,7 @@ import { useScrollReveal } from '../hooks/useScrollReveal.js'
 import PillarCard from '../components/ui/PillarCard.jsx'
 import { statsData } from '../data/statsData.js'
 import { pillarsData } from '../data/pillarsData.js'
+import { isRegistrationClosed, REGISTRATION_URL } from '../components/events/FlipCountdown.jsx'
 
 // Marquee words from index.html
 const MARQUEE_WORDS = [
@@ -33,6 +35,20 @@ export default function Home() {
   useDocumentTitle(null)
   const revealRef = useScrollReveal('.event-row, .cta-strip h2, .cta-strip p')
 
+  // Evaluated on page load (synchronously) and polled each second
+  const [isClosed, setIsClosed] = useState(() => isRegistrationClosed())
+
+  useEffect(() => {
+    if (isClosed) return
+    const interval = setInterval(() => {
+      if (isRegistrationClosed()) {
+        setIsClosed(true)
+        clearInterval(interval)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isClosed])
+
   return (
     <>
       {/* HERO */}
@@ -52,7 +68,26 @@ export default function Home() {
               tomorrow, right here on campus.
             </p>
             <div className="hero-actions line-reveal delay-3">
-              <Link to="/about" className="btn btn-primary">Discover EDC</Link>
+              {!isClosed ? (
+                <Link
+                  id="hero-register-btn"
+                  to={REGISTRATION_URL}
+                  className="btn btn-primary btn-gold hero-register-btn"
+                >
+                  Register Now →
+                </Link>
+              ) : (
+                <button
+                  id="hero-register-btn"
+                  type="button"
+                  className="btn btn-disabled hero-register-btn"
+                  disabled
+                  aria-disabled="true"
+                  tabIndex={-1}
+                >
+                  Registrations Closed
+                </button>
+              )}
               <Link to="/events" className="btn btn-ghost">View Events →</Link>
             </div>
           </div>

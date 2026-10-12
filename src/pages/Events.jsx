@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import EFestHero from '../components/events/EFestHero.jsx'
+import EventsSponsors from '../components/events/EventsSponsors.jsx'
 import { pastEvents } from '../data/eventsData.js'
 
 export default function Events() {
@@ -22,6 +23,9 @@ export default function Events() {
           <EFestHero />
         </div>
       </section>
+
+      {/* POWERED BY & SPONSORS */}
+      <EventsSponsors />
 
       {/* PAST EVENTS */}
       <section className="section" style={{ background: 'var(--bg-2)' }}>

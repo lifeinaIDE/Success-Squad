@@ -24,6 +24,7 @@ import { Helmet }   from 'react-helmet-async'
 import { efestEvents } from '../data/eventConfigs.js'
 import EventTile        from '../components/events/EventTile.jsx'
 import RegistrationModal from '../components/events/RegistrationModal.jsx'
+import EventsSponsors    from '../components/events/EventsSponsors.jsx'
 import { isRegistrationClosed, REGISTRATION_DEADLINE } from '../components/events/FlipCountdown.jsx'
 
 export default function RegistrationHub() {
@@ -81,6 +82,8 @@ export default function RegistrationHub() {
             />
           ))}
         </div>
+
+        <EventsSponsors />
       </div>
 
       {/* Registration modal, only mounts when an event is selected */}

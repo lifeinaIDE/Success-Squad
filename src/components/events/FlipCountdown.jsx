@@ -23,6 +23,12 @@ export const REGISTRATION_DEADLINE_DATE = new Date(REGISTRATION_DEADLINE)
 export const REGISTRATION_DEADLINE_MS = REGISTRATION_DEADLINE_DATE.getTime()
 
 /**
+ * Single source of truth for the E-Fest '26 registration page route/URL.
+ */
+export const FEST_SLUG = import.meta.env.VITE_FEST_SLUG || 'e-fest-26'
+export const REGISTRATION_URL = `/fest/${FEST_SLUG}`
+
+/**
  * Helper to check if registration has closed against the single source of truth deadline.
  */
 export function isRegistrationClosed(targetMs = REGISTRATION_DEADLINE_MS) {

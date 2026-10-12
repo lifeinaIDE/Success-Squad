@@ -129,12 +129,13 @@ export default function Contact() {
                 Follow Us
               </h4>
               <div className="social-links-big">
-                {socialData.map(({ id, label, href, target }) => (
+                {socialData.map(({ id, label, href, target, ariaLabel }) => (
                   <a
                     key={id}
                     href={href}
                     target={target}
                     rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+                    aria-label={ariaLabel}
                     className="social-link-row"
                   >
                     <span>{label}</span>

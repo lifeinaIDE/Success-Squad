@@ -16,7 +16,7 @@
  *  - Inline per-field errors shown on blur or on submit attempt
  *
  * Note: This component is shared by ALL multi-member team events (BGMI LEC, FFLEC,
- *       CraftCode, IPL Auction, Startup Pitch, Money Makers) via eventConfigs.js config - 
+ *       CraftCode, IPL Auction, Startup Pitch, Illuminate Workshop) via eventConfigs.js config - 
  *       not duplicated per-event.
  */
 
