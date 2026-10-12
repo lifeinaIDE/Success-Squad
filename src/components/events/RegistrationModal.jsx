@@ -19,6 +19,7 @@ import TeamDetailsStep           from './steps/TeamDetailsStep.jsx'
 import PaymentStep               from './steps/PaymentStep.jsx'
 import ConfirmationStep          from './steps/ConfirmationStep.jsx'
 import CraftCodeRegistration     from './CraftCodeRegistration.jsx'
+import { isRegistrationClosed }  from './FlipCountdown.jsx'
 
 const STEPS_STANDARD  = ['Team Details', 'Payment', 'Confirmation']
 const STEPS_CRAFTCODE = ['Team Details', 'Unstop Registration']
@@ -87,11 +88,19 @@ export default function RegistrationModal({ eventId, isOpen, onClose }) {
 
   // ── Step handlers ───────────────────────────────────────────────────────
   const handleTeamDetailsSubmit = useCallback((data) => {
+    if (isRegistrationClosed()) {
+      alert("Registrations for E-Fest '26 closed on 26 Oct, 12:00 PM IST.")
+      return
+    }
     setFormData(data)
     setStep(1)
   }, [])
 
   const handlePaymentSubmit = useCallback((result) => {
+    if (isRegistrationClosed()) {
+      alert("Registrations for E-Fest '26 closed on 26 Oct, 12:00 PM IST.")
+      return
+    }
     setPaymentResult(result)
     setStep(2)
   }, [])

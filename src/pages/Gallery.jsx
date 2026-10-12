@@ -103,7 +103,7 @@ export default function Gallery() {
     <>
       <div className="page-header">
         <div className="section-label">Gallery</div>
-        <h1>Moments to <span className="accent">remember.</span></h1>
+        <h1>Moments to <span className="accent">remember</span></h1>
         <p>A visual journey through our hackathons, workshops, and fests.</p>
       </div>
 

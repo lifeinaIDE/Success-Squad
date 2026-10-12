@@ -13,6 +13,15 @@ function requireSupabase() {
 
 // ── holdSlot ─────────────────────────────────────────────────────────────────
 export async function holdSlot(eventId, teamData, amountINR) {
+  // Pre-flight cutoff check (Requirement 5)
+  // NOTE: A client device clock can drift or be spoofed. Truly blocking late submissions
+  // requires server-side enforcement (e.g., Supabase Postgres 'hold_slot' RPC rejecting
+  // now() > '2026-10-26 12:00:00+05:30'::timestamptz, or Firebase Security Rules).
+  // If using Google Forms or Unstop, remember to also set the close date in their dashboard.
+  if (Date.now() >= new Date('2026-10-26T12:00:00+05:30').getTime()) {
+    throw new Error("Registrations for E-Fest '26 closed on 26 Oct, 12:00 PM IST.")
+  }
+
   const sb = requireSupabase()
 
   // 12-second hard timeout - Supabase cold-start or network issues should not

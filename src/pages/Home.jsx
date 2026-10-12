@@ -45,7 +45,7 @@ export default function Home() {
           <div className="hero-content">
             <h1 className="hero-title">
               <span className="line-reveal">From Vision</span>
-              <span className="line-reveal delay-1">to <em>Venture.</em></span>
+              <span className="line-reveal delay-1">to <em>Venture</em></span>
             </h1>
             <p className="hero-sub line-reveal delay-2">
               We ignite entrepreneurial spirits, nurture bold ideas, and build the founders of
@@ -119,7 +119,7 @@ export default function Home() {
       {/* WHAT WE DO */}
       <section className="section pillars">
         <div className="section-label">What We Do</div>
-        <h2 className="section-title">Turning ideas into<br /><span className="accent">impact.</span></h2>
+        <h2 className="section-title">Turning ideas into<br /><span className="accent">impact</span></h2>
         <div className="pillars-grid">
           {pillarsData.map((p) => <PillarCard key={p.id} {...p} />)}
         </div>

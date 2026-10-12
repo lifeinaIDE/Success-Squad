@@ -19,20 +19,35 @@
  * Only BGMI LEC is fully wired; others show a "Coming Soon" disabled state.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Helmet }   from 'react-helmet-async'
 import { efestEvents } from '../data/eventConfigs.js'
 import EventTile        from '../components/events/EventTile.jsx'
 import RegistrationModal from '../components/events/RegistrationModal.jsx'
+import { isRegistrationClosed, REGISTRATION_DEADLINE } from '../components/events/FlipCountdown.jsx'
 
 export default function RegistrationHub() {
   const [activeEventId, setActiveEventId] = useState(null)
+  const [isClosed, setIsClosed] = useState(() => isRegistrationClosed())
+
+  // Check periodically while the hub page is open
+  useEffect(() => {
+    if (isClosed) return
+    const id = setInterval(() => {
+      if (isRegistrationClosed()) {
+        setIsClosed(true)
+        setActiveEventId(null) // auto-close modal if open
+        clearInterval(id)
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isClosed])
 
   return (
     <>
       {/* noindex/nofollow so search engines never index this page */}
       <Helmet>
-        <title>E-Fest '26, Register</title>
+        <title>{isClosed ? "E-Fest '26, Registrations Closed" : "E-Fest '26, Register"}</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="description" content="E-Fest '26 event registration hub." />
       </Helmet>
@@ -41,10 +56,16 @@ export default function RegistrationHub() {
         <div className="hub-header">
           <div className="section-label">E-Fest '26</div>
           <h1 className="hub-title">
-            Choose your <span className="accent">competition.</span>
+            {isClosed ? (
+              <>Registrations are <span className="accent">closed</span></>
+            ) : (
+              <>Choose your <span className="accent">competition</span></>
+            )}
           </h1>
           <p className="hub-sub">
-            Six events. One legendary weekend. Pick your battle.
+            {isClosed
+              ? 'Registrations for E-Fest \'26 closed on 26 Oct, 12:00 PM IST.'
+              : 'Six events. One legendary weekend. Pick your battle.'}
           </p>
         </div>
 
@@ -53,7 +74,10 @@ export default function RegistrationHub() {
             <EventTile
               key={event.id}
               event={event}
-              onRegister={() => setActiveEventId(event.id)}
+              isClosed={isClosed}
+              onRegister={() => {
+                if (!isClosed) setActiveEventId(event.id)
+              }}
             />
           ))}
         </div>

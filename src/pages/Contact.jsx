@@ -47,7 +47,7 @@ export default function Contact() {
     <>
       <div className="page-header">
         <div className="section-label">Get Involved</div>
-        <h1>Let's build <span className="accent">together.</span></h1>
+        <h1>Let's build <span className="accent">together</span></h1>
         <p>Whether you want to join the team, collaborate on events, sponsor us, or pitch your startup, we're all ears.</p>
       </div>
 
@@ -58,7 +58,7 @@ export default function Contact() {
           <div className="contact-form-wrap">
             <div className="section-label">Send Us a Message</div>
             <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '32px' }}>
-              We'd love to <span className="accent">hear you.</span>
+              We'd love to <span className="accent">hear you</span>
             </h2>
 
             {status !== 'success' ? (

@@ -1,4 +1,5 @@
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
+import connexaaLogo from '../assets/logo-removebg-preview.png'
 import centinezLogo from '../assets/centinez-logo.png'
 import unstopLogo   from '../assets/unstop-logo.png'
 
@@ -17,7 +18,7 @@ export default function Sponsors() {
         <div className="section-label">Our Sponsors</div>
         <h1>
           Partners in&nbsp;
-          <span className="accent">Success.</span>
+          <span className="accent">Success</span>
         </h1>
         <p>
           We are grateful to the organisations that believe in our mission and
@@ -25,13 +26,53 @@ export default function Sponsors() {
         </p>
       </div>
 
+      {/* ── Main Sponsor Section: Powered By ── */}
+      <section className="section main-sponsor-section" aria-label="Main Sponsor">
+        <div className="section-label" style={{ marginBottom: '16px' }}>
+          Powered by
+        </div>
+
+        {/* Featured Main Sponsor Card */}
+        {/* Official Connexaa website (from startupsData): https://connexaa.in */}
+        <a
+          href="https://connexaa.in"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="main-sponsor-card"
+          aria-label="Connexaa - Main Sponsor: India's Student-First Digital Campus Platform (opens in new tab)"
+        >
+          {/* Logo sitting directly on the section's dark background */}
+          <div className="main-sponsor-logo-wrap">
+            <img
+              src={connexaaLogo}
+              alt="Connexaa logo"
+              className="main-sponsor-logo"
+              loading="lazy"
+            />
+          </div>
+
+          {/* Main sponsor content info */}
+          <div className="main-sponsor-content">
+            <h2 className="main-sponsor-name">CONNEXAA</h2>
+            <p className="main-sponsor-tagline">
+              India's Student-First Digital Campus Platform
+            </p>
+            <div className="main-sponsor-cta">
+              <span className="main-sponsor-link-text">
+                Visit Website <span className="arrow" aria-hidden="true">↗</span>
+              </span>
+            </div>
+          </div>
+        </a>
+      </section>
+
       {/* ── Sponsors section ── */}
       <section className="section sponsors-section">
         <div className="section-label" style={{ marginBottom: '8px' }}>
           Current sponsors
         </div>
         <h2 className="section-title">
-          Backed by the <span className="accent">best.</span>
+          Backed by the <span className="accent">best</span>
         </h2>
 
         <div className="sponsors-grid">

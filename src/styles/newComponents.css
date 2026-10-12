@@ -3,8 +3,127 @@
    NEW COMPONENTS, E-Fest '26 Registration System
    ================================================================ */
 
+/* ---- E-FEST HIGHLIGHT CARD TOKENS (Gold Theme) ---- */
+:root {
+  --gold: #fbbf24;
+  --gold-color: #fbbf24;
+  --gold-amber: #f59e0b;
+  --gold-muted: #d9a520;
+  --gold-border: rgba(251, 191, 36, 0.85);
+  --gold-glow-1: rgba(251, 191, 36, 0.35);
+  --gold-glow-2: rgba(251, 191, 36, 0.28);
+  --gold-glow-3: rgba(251, 191, 36, 0.15);
+  --gold-glow: 0 0 24px rgba(251, 191, 36, 0.18), inset 0 0 20px rgba(251, 191, 36, 0.05);
+  --gold-btn-glow: rgba(251, 191, 36, 0.4);
+  --gold-badge-bg: rgba(20, 16, 7, 0.82);
+  --gold-badge-border: rgba(251, 191, 36, 0.45);
+  --warm-white: #fff7e0;
+  --urgent-color: #f97316;
+}
+
 /* ---- E-FEST HERO CARD ---- */
-.efest-hero-card { grid-column: 1 / -1; }
+.efest-hero-card {
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  padding: 44px 40px 40px;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
+}
+
+/* Open state: Gold gradient border + layered outer glow + subtle pulse */
+.efest-hero-card.registration-open {
+  background:
+    linear-gradient(145deg, #14141f, #181830) padding-box,
+    linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.75), rgba(251, 191, 36, 0.95)) border-box;
+  border: 1.5px solid transparent;
+  box-shadow:
+    0 0 0 1px var(--gold-glow-1),
+    0 0 24px var(--gold-glow-2),
+    0 0 60px var(--gold-glow-3);
+  animation: goldCardPulse 3s ease-in-out infinite;
+}
+
+.efest-hero-card.registration-open:hover {
+  box-shadow:
+    0 0 0 1.5px var(--gold-glow-1),
+    0 0 32px var(--gold-glow-2),
+    0 0 75px var(--gold-glow-3);
+}
+
+/* Closed state: Remove gold glow, pulse animation, and return to normal subtle border */
+.efest-hero-card.registration-closed {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  animation: none;
+}
+
+/* Subtle breathing glow keyframes */
+@keyframes goldCardPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.35),
+      0 0 24px rgba(251, 191, 36, 0.28),
+      0 0 60px rgba(251, 191, 36, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px rgba(251, 191, 36, 0.5),
+      0 0 32px rgba(251, 191, 36, 0.38),
+      0 0 75px rgba(251, 191, 36, 0.22);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .efest-hero-card.registration-open {
+    animation: none !important;
+  }
+  .efest-countdown-dot {
+    animation: none !important;
+  }
+  .efest-countdown.timer-urgent .efest-countdown-dot,
+  .efest-countdown.timer-urgent .flip-unit-seconds .flip-card {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---- GOLD STATUS BADGE ---- */
+.efest-hero-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  line-height: 1.2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  width: fit-content;
+  transition: all 0.3s ease;
+}
+
+.efest-hero-badge.badge-open {
+  background: var(--gold-badge-bg);
+  color: var(--gold-color);
+  border: 1px solid var(--gold-badge-border);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.15);
+}
+
+.efest-hero-badge.badge-closed {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+/* Highlighted Register Now button on hover */
+.efest-hero-card.registration-open #efest-register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px var(--gold-btn-glow), 0 8px 30px rgba(99, 102, 241, 0.35);
+}
 .efest-hero-inner {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -27,7 +146,30 @@
   max-width: 560px;
   margin-bottom: 28px;
 }
-.efest-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.efest-hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.efest-deadline-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+}
+
+/* Right column holding Stat counter and Countdown timer */
+.efest-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
 .efest-hero-stat {
   display: flex;
   flex-direction: column;
@@ -36,13 +178,13 @@
   background: rgba(99,102,241,0.06);
   border: 1px solid rgba(99,102,241,0.15);
   border-radius: var(--radius);
-  padding: 32px 40px;
+  padding: 28px 36px;
   text-align: center;
-  flex-shrink: 0;
+  width: 100%;
 }
 .efest-stat-num {
   font-family: var(--font-display);
-  font-size: 4.5rem;
+  font-size: 4.2rem;
   font-weight: 800;
   color: var(--accent);
   line-height: 1;
@@ -58,16 +200,454 @@
   font-size: 0.72rem;
   color: var(--text-muted);
   opacity: 0.6;
-  max-width: 160px;
+  max-width: 220px;
   line-height: 1.5;
   margin-top: 8px;
 }
+
+/* ============================================================
+   FLIP-CLOCK COUNTDOWN TIMER (Highlighted Gold Focal Panel)
+   ============================================================ */
+.efest-countdown {
+  --flip-label-color: var(--gold-muted);
+  --flip-header-color: var(--gold);
+  /* 8-10% enlarged flip card dimensions (previously 68px x 88px, font 2.75rem) */
+  --flip-width: 74px;
+  --flip-height: 96px;
+  --flip-radius: 10px;
+  --flip-font-size: 3rem;
+  --flip-gap: 10px;
+  --flip-digit-color: var(--warm-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  background: rgba(251, 191, 36, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.18), inset 0 0 20px rgba(251, 191, 36, 0.05);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: fit-content;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Header label above timer: "REGISTRATION CLOSES IN" */
+.efest-countdown-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.efest-countdown-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+  animation: goldDotPulse 2s infinite ease-in-out;
+}
+
+@keyframes goldDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.95);
+  }
+}
+
+.efest-countdown-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  transition: color 0.3s ease;
+}
+
+/* ---- URGENCY STATE (< 24 hours remaining) ---- */
+.efest-countdown.timer-urgent {
+  --flip-label-color: #fb923c;
+  --flip-header-color: var(--urgent-color);
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 24px rgba(249, 115, 22, 0.28), inset 0 0 20px rgba(249, 115, 22, 0.08);
+}
+
+.efest-countdown.timer-urgent .efest-countdown-label {
+  color: var(--urgent-color);
+}
+
+.efest-countdown.timer-urgent .efest-countdown-dot {
+  background: var(--urgent-color);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.8);
+  animation: urgentDotPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes urgentDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(249, 115, 22, 1);
+  }
+}
+
+.efest-countdown.timer-urgent .flip-card {
+  border-color: rgba(249, 115, 22, 0.4);
+  text-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+
+.efest-countdown.timer-urgent .flip-unit-seconds .flip-card {
+  animation: urgentSecondsPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes urgentSecondsPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 14px rgba(249, 115, 22, 0.35);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 24px rgba(249, 115, 22, 0.7);
+  }
+}
+
+/* Closed state styling: remove glow, pulse and gold colors */
+.efest-countdown.is-closed {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.efest-countdown.is-closed .efest-countdown-dot,
+.efest-countdown-header.is-closed .efest-countdown-dot {
+  background: var(--text-muted);
+  box-shadow: none;
+  animation: none;
+}
+
+.efest-countdown.is-closed .efest-countdown-label,
+.efest-countdown-header.is-closed .efest-countdown-label {
+  color: var(--text-muted);
+}
+
+.efest-countdown.is-closed .flip-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
+  color: var(--text-muted);
+  animation: none;
+}
+
+.efest-countdown.is-closed .flip-unit-label {
+  color: var(--text-muted);
+}
+
+/* Disabled button styling for closed registrations */
+.btn-disabled,
+.btn[disabled],
+.btn:disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.75;
+}
+
+/* Board holding 4 flip units in a row */
+.flip-board {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: var(--flip-gap);
+}
+
+.flip-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Individual 3D flip card */
+.flip-card {
+  position: relative;
+  width: var(--flip-width);
+  height: var(--flip-height);
+  perspective: 320px;
+  font-family: var(--font-countdown);
+  font-size: var(--flip-font-size);
+  font-weight: 700;
+  color: var(--flip-digit-color);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  border-radius: var(--flip-radius);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Split-card halves: exactly 50% height with overflow: hidden */
+.flip-half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Upper half: top 0 to 50% */
+.flip-upper {
+  top: 0;
+  background: linear-gradient(180deg, #2a2a34 0%, #202028 100%);
+  border-top: 1px solid rgba(251, 191, 36, 0.35);
+  border-left: 1px solid rgba(251, 191, 36, 0.15);
+  border-right: 1px solid rgba(251, 191, 36, 0.15);
+  border-radius: var(--flip-radius) var(--flip-radius) 0 0;
+  box-shadow: inset 0 1px 1px rgba(251, 191, 36, 0.2);
+  transform-origin: bottom center;
+}
+
+/* Digit inside upper half: top: 0, showing TOP half of number */
+.flip-upper .flip-digit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--flip-height);
+  line-height: var(--flip-height);
+  text-align: center;
+  display: block;
+}
+
+/* Lower half: top 50% to 100% (slightly darker) */
+.flip-lower {
+  top: 50%;
+  background: linear-gradient(180deg, #181820 0%, #121217 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0 0 var(--flip-radius) var(--flip-radius);
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.4);
+  transform-origin: top center;
+}
+
+/* Digit inside lower half: shifted up by 50% of card height, showing BOTTOM half of number */
+.flip-lower .flip-digit {
+  position: absolute;
+  top: calc(-0.5 * var(--flip-height));
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--flip-height);
+  line-height: var(--flip-height);
+  text-align: center;
+  display: block;
+}
+
+/* Horizontal center groove line */
+.flip-card-divider {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(8, 8, 12, 0.85);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Side notch hinges */
+.flip-card::before,
+.flip-card::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 3px);
+  width: 4px;
+  height: 6px;
+  background: #0d0d12;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.flip-card::before {
+  left: 0;
+  border-radius: 0 3px 3px 0;
+}
+
+.flip-card::after {
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+/* Static backgrounds z-index */
+.flip-upper.flip-bg {
+  z-index: 1;
+}
+
+.flip-lower.flip-bg {
+  z-index: 1;
+}
+
+/* 3D Animated Flap Rotations */
+.flip-flap-top {
+  z-index: 3;
+  animation: flipCardTop 0.28s ease-in forwards;
+}
+
+.flip-flap-bottom {
+  z-index: 2;
+  transform: rotateX(90deg);
+  animation: flipCardBottom 0.28s ease-out 0.28s forwards;
+}
+
+@keyframes flipCardTop {
+  0% {
+    transform: rotateX(0deg);
+    filter: brightness(1);
+  }
+  100% {
+    transform: rotateX(-90deg);
+    filter: brightness(0.65);
+  }
+}
+
+@keyframes flipCardBottom {
+  0% {
+    transform: rotateX(90deg);
+    filter: brightness(0.65);
+  }
+  100% {
+    transform: rotateX(0deg);
+    filter: brightness(1);
+  }
+}
+
+/* Sub-card uppercase labels: DAYS, HOURS, MINUTES, SECONDS */
+.flip-unit-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--flip-label-color);
+  text-align: center;
+  margin-top: 8px;
+  transition: color 0.2s ease;
+}
+
+/* ---- Responsive: tablet & mobile ---- */
+@media (max-width: 960px) {
+  .efest-hero-card {
+    padding: 32px 28px 28px;
+  }
+  .efest-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .efest-hero-right {
+    width: 100%;
+    align-items: center;
+  }
+  .efest-hero-stat {
+    max-width: 320px;
+    width: 100%;
+  }
+}
+
 @media (max-width: 700px) {
-  .efest-hero-inner { grid-template-columns: 1fr; }
-  .efest-hero-stat { padding: 24px 28px; flex-direction: row; gap: 20px; align-items: center; text-align: left; }
-  .efest-stat-num { font-size: 3rem; }
+  .efest-hero-card {
+    padding: 28px 20px 24px;
+  }
+  .efest-hero-badge {
+    font-size: 0.68rem;
+    letter-spacing: 1.4px;
+    padding: 4px 10px;
+    margin-bottom: 10px;
+  }
+  .efest-hero-stat {
+    padding: 22px 26px;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+    text-align: left;
+    max-width: 320px;
+  }
+  .efest-stat-num { font-size: 2.8rem; }
   .efest-stat-sub { display: none; }
+  .efest-hero-actions { width: 100%; align-items: stretch; }
   .efest-hero-actions .btn { width: 100%; justify-content: center; }
+  .efest-deadline-note { text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .efest-hero-card {
+    padding: 24px 16px;
+  }
+  .efest-hero-title {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .efest-countdown {
+    --flip-width: 58px;
+    --flip-height: 76px;
+    --flip-radius: 8px;
+    --flip-font-size: 2.3rem;
+    --flip-gap: 8px;
+    padding: 14px 14px;
+  }
+  .flip-unit-label {
+    font-size: 0.6rem;
+    letter-spacing: 1.2px;
+    margin-top: 6px;
+  }
+  .efest-countdown-label {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+  }
+}
+
+@media (max-width: 380px) {
+  .efest-countdown {
+    --flip-width: 52px;
+    --flip-height: 68px;
+    --flip-radius: 7px;
+    --flip-font-size: 2rem;
+    --flip-gap: 5px;
+    padding: 12px 10px;
+    border-radius: 12px;
+  }
+  .flip-unit-label {
+    font-size: 0.54rem;
+    letter-spacing: 1px;
+    margin-top: 5px;
+  }
+  .efest-countdown-label {
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+  }
 }
 
 /* ---- REGISTRATION HUB PAGE ---- */
