@@ -6,6 +6,7 @@ import About            from './pages/About.jsx'
 import Team             from './pages/Team.jsx'
 import Events           from './pages/Events.jsx'
 import Gallery          from './pages/Gallery.jsx'
+import Sponsors         from './pages/Sponsors.jsx'
 import Startups         from './pages/Startups.jsx'
 import Contact          from './pages/Contact.jsx'
 import PrivacyPolicy    from './pages/PrivacyPolicy.jsx'
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="team"              element={<Team />} />
             <Route path="events"            element={<Events />} />
             <Route path="gallery"           element={<Gallery />} />
+            <Route path="sponsors"          element={<Sponsors />} />
             <Route path="startups"          element={<Startups />} />
             <Route path="contact"           element={<Contact />} />
             <Route path="privacy-policy"    element={<PrivacyPolicy />} />
