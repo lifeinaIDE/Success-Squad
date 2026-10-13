@@ -1,22 +1,10 @@
 /**
  * RegistrationHub.jsx - Hidden E-Fest '26 registration hub.
  *
- * ⚠️  SECURITY NOTE (obscurity, not access control):
- *     This page is "hidden" only in the sense that:
- *       - It's not linked from any nav, footer, or sitemap
- *       - Its route slug is a non-guessable token stored in VITE_FEST_SLUG
- *       - It carries <meta name="robots" content="noindex,nofollow" />
- *     HOWEVER - anyone with the URL (via browser history, shared screenshot,
- *     or JS bundle inspection) CAN reach this page. There is NO real access
- *     control gate here.
+ * CraftCode (external-unstop): clicking Register Now opens a lightweight
+ * UnstopDirectModal with the Unstop link — no multi-step form.
  *
- *     TODO (future upgrade): If stronger gating is required, implement a
- *     short-lived signed token as a query param (e.g. ?t=<HMAC>) validated
- *     server-side (Vercel Edge Function or Firebase Cloud Function) before
- *     rendering any page content. This is the recommended upgrade path.
- *
- * This component renders a 2×3 grid of EventTile cards (one per E-Fest event).
- * Only BGMI LEC is fully wired; others show a "Coming Soon" disabled state.
+ * Standard events: opens RegistrationModal (team or individual flow).
  */
 
 import { useState, useEffect } from 'react'
@@ -24,12 +12,14 @@ import { Helmet }   from 'react-helmet-async'
 import { efestEvents } from '../data/eventConfigs.js'
 import EventTile        from '../components/events/EventTile.jsx'
 import RegistrationModal from '../components/events/RegistrationModal.jsx'
+import UnstopDirectModal from '../components/events/UnstopDirectModal.jsx'
 import EventsSponsors    from '../components/events/EventsSponsors.jsx'
-import { isRegistrationClosed, REGISTRATION_DEADLINE } from '../components/events/FlipCountdown.jsx'
+import { isRegistrationClosed } from '../components/events/FlipCountdown.jsx'
 
 export default function RegistrationHub() {
-  const [activeEventId, setActiveEventId] = useState(null)
-  const [isClosed, setIsClosed] = useState(() => isRegistrationClosed())
+  const [activeEventId, setActiveEventId]       = useState(null)
+  const [unstopEventConfig, setUnstopEventConfig] = useState(null)
+  const [isClosed, setIsClosed]                 = useState(() => isRegistrationClosed())
 
   // Check periodically while the hub page is open
   useEffect(() => {
@@ -37,18 +27,28 @@ export default function RegistrationHub() {
     const id = setInterval(() => {
       if (isRegistrationClosed()) {
         setIsClosed(true)
-        setActiveEventId(null) // auto-close modal if open
+        setActiveEventId(null)
+        setUnstopEventConfig(null)
         clearInterval(id)
       }
     }, 1000)
     return () => clearInterval(id)
   }, [isClosed])
 
+  const handleRegister = (event) => {
+    if (isClosed) return
+    if (event.registrationType === 'external-unstop') {
+      // Open the lightweight Unstop modal directly
+      setUnstopEventConfig(event)
+    } else {
+      setActiveEventId(event.id)
+    }
+  }
+
   return (
     <>
-      {/* noindex/nofollow so search engines never index this page */}
       <Helmet>
-        <title>{isClosed ? "E-Fest '26, Registrations Closed" : "E-Fest '26, Register"}</title>
+        <title>{isClosed ? "E-Fest '26 — Registrations Closed" : "E-Fest '26 — Register"}</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="description" content="E-Fest '26 event registration hub." />
       </Helmet>
@@ -65,7 +65,7 @@ export default function RegistrationHub() {
           </h1>
           <p className="hub-sub">
             {isClosed
-              ? 'Registrations for E-Fest \'26 closed on 26 Oct, 12:00 PM IST.'
+              ? "Registrations for E-Fest '26 closed on 26 Oct, 12:00 PM IST."
               : 'Six events. One legendary weekend. Pick your battle.'}
           </p>
         </div>
@@ -76,9 +76,7 @@ export default function RegistrationHub() {
               key={event.id}
               event={event}
               isClosed={isClosed}
-              onRegister={() => {
-                if (!isClosed) setActiveEventId(event.id)
-              }}
+              onRegister={() => handleRegister(event)}
             />
           ))}
         </div>
@@ -86,11 +84,18 @@ export default function RegistrationHub() {
         <EventsSponsors />
       </div>
 
-      {/* Registration modal, only mounts when an event is selected */}
+      {/* Standard registration modal (team / individual) */}
       <RegistrationModal
         eventId={activeEventId}
         isOpen={!!activeEventId}
         onClose={() => setActiveEventId(null)}
+      />
+
+      {/* Lightweight Unstop redirect modal for CraftCode */}
+      <UnstopDirectModal
+        config={unstopEventConfig}
+        isOpen={!!unstopEventConfig}
+        onClose={() => setUnstopEventConfig(null)}
       />
     </>
   )

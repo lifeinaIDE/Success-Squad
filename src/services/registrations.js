@@ -56,29 +56,39 @@ export async function submitPaymentProof(orderId, eventId, utr, file) {
   const sb = requireSupabase()
 
   // 1. Upload screenshot to Cloudinary
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  const cloudName    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
   if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary environment variables are missing.')
+    throw new Error(
+      'Cloudinary is not configured. Please set VITE_CLOUDINARY_CLOUD_NAME and ' +
+      'VITE_CLOUDINARY_UPLOAD_PRESET in your .env.local file.'
+    )
   }
 
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('upload_preset', uploadPreset)
-  formData.append('folder', `payment-proofs/${eventId}`)
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('upload_preset', uploadPreset)
+  fd.append('folder', `payment-proofs/${eventId}`)
 
   const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
 
   const cloudinaryRes = await fetch(cloudinaryUrl, {
     method: 'POST',
-    body: formData
+    body: fd,
   })
 
   const cloudinaryData = await cloudinaryRes.json()
 
   if (!cloudinaryRes.ok) {
-    throw new Error(cloudinaryData.error?.message || 'Failed to upload screenshot to Cloudinary')
+    // Common cause: upload preset is set to 'signed' in Cloudinary dashboard.
+    // Fix: Go to Cloudinary → Settings → Upload → Upload Presets → set to 'Unsigned'.
+    const msg = cloudinaryData.error?.message || 'Failed to upload screenshot to Cloudinary'
+    throw new Error(
+      msg.includes('upload preset') || msg.includes('preset')
+        ? `Cloudinary upload failed: "${msg}". Make sure the upload preset "${uploadPreset}" is set to Unsigned in your Cloudinary dashboard (Settings → Upload → Upload Presets).`
+        : `Cloudinary upload failed: ${msg}`
+    )
   }
 
   const screenshotUrl = cloudinaryData.secure_url
