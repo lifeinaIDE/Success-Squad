@@ -5,10 +5,9 @@
  * registration hub route. The slug comes from VITE_FEST_SLUG env var;
  * falls back to 'e-fest-26' - matching the same default in App.jsx.
  */
-import { useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import FlipCountdown, {
-  REGISTRATION_DEADLINE,
+import {
   isRegistrationClosed,
   REGISTRATION_URL,
 } from './FlipCountdown.jsx'
@@ -20,7 +19,7 @@ const EFEST_EVENTS_COUNT = 6
 /**
  * NOTE ON CUTOFF ENFORCEMENT & SECURITY (Requirement 5):
  * The registration status here is checked client-side using the shared
- * REGISTRATION_DEADLINE constant (both on initial render and on every second tick).
+ * deadline helper (both on initial render and on every second tick).
  * To strictly prevent late submissions, a server-side or database-level rule
  * (such as a Supabase Postgres RPC constraint or Firebase Security Rules timestamp check)
  * is necessary since a client's device clock can be manipulated.
@@ -32,10 +31,16 @@ export default function EFestHero() {
   // Evaluated on page load (synchronously) so there is zero layout flash
   const [isClosed, setIsClosed] = useState(() => isRegistrationClosed())
 
-  // Updated every second by the FlipCountdown timer interval
-  const handleStatusChange = useCallback((status) => {
-    setIsClosed(status.isClosed)
-  }, [])
+  useEffect(() => {
+    if (isClosed) return
+    const id = setInterval(() => {
+      if (isRegistrationClosed()) {
+        setIsClosed(true)
+        clearInterval(id)
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isClosed])
 
   return (
     <div
@@ -100,19 +105,13 @@ export default function EFestHero() {
           </div>
         </div>
 
-        {/* ── RIGHT: Stat counter & Flip-clock Countdown ── */}
+        {/* ── RIGHT: Stat counter ── */}
         <div className="efest-hero-right">
           <div className="efest-hero-stat" aria-label={`${EFEST_EVENTS_COUNT} Events`}>
             <span className="efest-stat-num">{EFEST_EVENTS_COUNT}</span>
             <span className="efest-stat-label">Events</span>
             <span className="efest-stat-sub">BGMI · FFLEC · CraftCode · IPL Auction · Pitch · Illuminate Workshop</span>
           </div>
-
-          {/* Flip-clock Countdown Timer using the shared deadline */}
-          <FlipCountdown
-            targetDate={REGISTRATION_DEADLINE}
-            onStatusChange={handleStatusChange}
-          />
         </div>
       </div>
     </div>
