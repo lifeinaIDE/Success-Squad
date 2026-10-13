@@ -11,7 +11,7 @@ export default function Team() {
     <>
       <div className="page-header">
         <div className="section-label">Our Team</div>
-        <h1>The people behind <span className="accent">Success Squad.</span></h1>
+        <h1>The people behind <span className="accent">Success Squad</span></h1>
         <p>A diverse group of passionate students driving innovation, leadership, and entrepreneurial change on campus.</p>
       </div>
 

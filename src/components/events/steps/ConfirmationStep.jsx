@@ -57,7 +57,11 @@ export default function ConfirmationStep({ config, formData, paymentResult, onCl
     )
   }
 
-  const teamName    = order.team_data?.teamName ?? formData?.teamName ?? '-'
+  const isIndividual = config?.registrationType === 'individual'
+  const teamName     = isIndividual
+    ? (order.team_data?.leaderName ?? formData?.leaderName ?? '-')
+    : (order.team_data?.teamName ?? formData?.teamName ?? '-')
+  const nameLabel    = isIndividual ? 'Participant Name' : 'Team Name'
   const submittedAt = order.created_at
     ? new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : '-'
@@ -99,7 +103,7 @@ export default function ConfirmationStep({ config, formData, paymentResult, onCl
         </p>
 
         {[
-          ['Team Name',       teamName],
+          [nameLabel,         teamName],
           ['Event',           config.name],
           ['Amount',          `₹${order.amount_inr}`],
           ['Transaction ID',  order.utr],  // DB column: utr; UI label: Transaction ID

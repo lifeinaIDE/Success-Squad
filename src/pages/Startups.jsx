@@ -10,7 +10,7 @@ export default function Startups() {
     <>
       <div className="page-header">
         <div className="section-label">Startups</div>
-        <h1>Born on <span className="accent">campus.</span></h1>
+        <h1>Born on <span className="accent">campus</span></h1>
         <p>These ventures were nurtured within Success Squad | proof that extraordinary things happen when students dare to build.</p>
       </div>
 
@@ -26,7 +26,7 @@ export default function Startups() {
       {/* INCUBATION CTA */}
       <section className="section incubation-cta" style={{ background: 'var(--bg-2)' }}>
         <div className="section-label">Got an Idea?</div>
-        <h2 className="section-title">We'll help you <span className="accent">build it.</span></h2>
+        <h2 className="section-title">We'll help you <span className="accent">build it</span></h2>
         <p style={{ color: 'var(--text-muted)', maxWidth: '600px', lineHeight: '1.8', marginBottom: '40px' }}>
           Success Squad's incubation program provides early-stage student startups with mentorship, workspace, access to our
           investor network, and seed support. If you have a product idea, we want to hear it.

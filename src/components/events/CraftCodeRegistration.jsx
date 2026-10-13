@@ -24,6 +24,7 @@
 import { useState, useRef } from 'react'
 import { generateReceipt } from '../../utils/generateReceipt.js'
 import { supabase } from '../../services/supabase.js'
+import { isRegistrationClosed } from './FlipCountdown.jsx'
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_TYPES  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -121,16 +122,29 @@ function SectionA({ config, teamData, onSuccess }) {
         <p style={{ fontSize: '0.9rem', marginBottom: 12, color: 'var(--text-muted)' }}>
           CraftCode is hosted on Unstop. Complete your registration there first, then confirm below.
         </p>
-        <a
-          href={config.unstopUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-primary"
-          id="craftcode-unstop-link"
-          style={{ display: 'inline-block' }}
-        >
-          Register on Unstop →
-        </a>
+        {!isRegistrationClosed() ? (
+          <a
+            href={config.unstopUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            id="craftcode-unstop-link"
+            style={{ display: 'inline-block' }}
+          >
+            Register on Unstop →
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-disabled"
+            disabled
+            aria-disabled="true"
+            id="craftcode-unstop-link"
+            style={{ display: 'inline-block' }}
+          >
+            Registrations Closed on Unstop
+          </button>
+        )}
       </div>
 
       <div className="form-group">

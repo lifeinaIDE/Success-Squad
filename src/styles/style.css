@@ -1,6 +1,6 @@
 /* === EDC WEBSITE - style.css === */
 /* Theme: Success Squad "orbit" palette - indigo/violet primary, cyan + amber + pink accents */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Oswald:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ---- RESET & ROOT ---- */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2186,9 +2186,165 @@ a, button, .nav-link, .btn {
    SPONSORS PAGE
    ============================================================ */
 
-/* ---- Section wrapper ---- */
+/* ---- Main Sponsor Section (Connexaa) ---- */
+.main-sponsor-section {
+  background: var(--bg);
+  padding-top: 60px;
+  padding-bottom: 24px;
+}
+
+/* Featured Main Sponsor Card */
+.main-sponsor-card {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: 100%;
+  padding: 44px 52px;
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(135deg, rgba(99, 102, 241, 0.65) 0%, rgba(168, 85, 247, 0.65) 50%, rgba(99, 102, 241, 0.3) 100%) border-box;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.35s ease;
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Subtle ambient backdrop radial gradient inside the card */
+.main-sponsor-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 60px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.16) 0%, rgba(99, 102, 241, 0.05) 60%, transparent 75%);
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(25px);
+  opacity: 0.8;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+/* Hover effects: slight lift + enhanced glow */
+.main-sponsor-card:hover {
+  transform: translateY(-6px);
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(168, 85, 247, 0.95) 50%, rgba(129, 140, 248, 0.5) 100%) border-box;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
+              0 0 45px rgba(139, 92, 246, 0.28);
+}
+
+.main-sponsor-card:hover::before {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.main-sponsor-card:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 4px;
+}
+
+/* Logo Wrapper: no box, no background, no border, no shadow */
+.main-sponsor-logo-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Connexaa Logo: transparent background directly on dark section, soft purple drop-shadow glow */
+.main-sponsor-logo {
+  width: 130px;
+  height: 130px;
+  max-width: 130px;
+  max-height: 130px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 24px rgba(139, 92, 246, 0.45));
+  transition: filter 0.35s ease, transform 0.35s ease;
+}
+
+.main-sponsor-card:hover .main-sponsor-logo {
+  filter: drop-shadow(0 0 32px rgba(139, 92, 246, 0.7));
+  transform: scale(1.03);
+}
+
+/* Content Area */
+.main-sponsor-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Name: "CONNEXAA" in bold, large, wide-letter-spaced uppercase text */
+.main-sponsor-name {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.8vw, 3rem);
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  line-height: 1.1;
+  transition: color 0.25s ease;
+}
+
+.main-sponsor-card:hover .main-sponsor-name {
+  color: #ffffff;
+}
+
+/* Tagline: "India's Student-First Digital Campus Platform" in muted grey text */
+.main-sponsor-tagline {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+/* Call-to-action cue */
+.main-sponsor-cta {
+  margin-top: 8px;
+}
+
+.main-sponsor-link-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  letter-spacing: 0.5px;
+  transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.main-sponsor-link-text .arrow {
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.main-sponsor-card:hover .main-sponsor-link-text {
+  color: #a5b4fc;
+}
+
+.main-sponsor-card:hover .main-sponsor-link-text .arrow {
+  transform: translate(3px, -3px);
+}
+
+/* ---- Section wrapper for Current Sponsors ---- */
 .sponsors-section {
   background: var(--bg);
+  padding-top: 36px;
 }
 
 /* ---- Two-column card grid ---- */
@@ -2282,6 +2438,18 @@ a, button, .nav-link, .btn {
 
 /* ---- Responsive: tablet (single column) ---- */
 @media (max-width: 900px) {
+  .main-sponsor-card {
+    gap: 32px;
+    padding: 36px 40px;
+  }
+
+  .main-sponsor-logo {
+    width: 120px;
+    height: 120px;
+    max-width: 120px;
+    max-height: 120px;
+  }
+
   .sponsors-grid {
     grid-template-columns: 1fr;
     gap: 24px;
@@ -2293,7 +2461,58 @@ a, button, .nav-link, .btn {
   }
 }
 
-/* ---- Responsive: mobile ---- */
+/* ---- Responsive: mobile (main sponsor stack & center) ---- */
+@media (max-width: 680px) {
+  .main-sponsor-section {
+    padding-top: 48px;
+    padding-bottom: 16px;
+  }
+
+  .sponsors-section {
+    padding-top: 28px;
+  }
+
+  .main-sponsor-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 32px 20px;
+  }
+
+  .main-sponsor-logo-wrap {
+    margin: 0 auto;
+  }
+
+  .main-sponsor-logo {
+    width: 110px;
+    height: 110px;
+    max-width: 110px;
+    max-height: 110px;
+  }
+
+  .main-sponsor-content {
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .main-sponsor-name {
+    font-size: 1.75rem;
+    letter-spacing: 3px;
+  }
+
+  .main-sponsor-tagline {
+    font-size: 0.92rem;
+    text-align: center;
+  }
+
+  .main-sponsor-cta {
+    margin-top: 4px;
+  }
+}
+
+/* ---- Responsive: mobile (existing sponsor cards) ---- */
 @media (max-width: 600px) {
   .sponsor-logo-wrap {
     padding: 24px 28px;

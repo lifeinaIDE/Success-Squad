@@ -3,8 +3,197 @@
    NEW COMPONENTS, E-Fest '26 Registration System
    ================================================================ */
 
+/* ---- E-FEST HIGHLIGHT CARD TOKENS (Gold Theme) ---- */
+:root {
+  --gold: #fbbf24;
+  --gold-color: #fbbf24;
+  --gold-amber: #f59e0b;
+  --gold-muted: #d9a520;
+  --gold-border: rgba(251, 191, 36, 0.85);
+  --gold-glow-1: rgba(251, 191, 36, 0.35);
+  --gold-glow-2: rgba(251, 191, 36, 0.28);
+  --gold-glow-3: rgba(251, 191, 36, 0.15);
+  --gold-glow: 0 0 24px rgba(251, 191, 36, 0.18), inset 0 0 20px rgba(251, 191, 36, 0.05);
+  --gold-btn-glow: rgba(251, 191, 36, 0.4);
+  --gold-badge-bg: rgba(20, 16, 7, 0.82);
+  --gold-badge-border: rgba(251, 191, 36, 0.45);
+  --warm-white: #fff7e0;
+  --urgent-color: #f97316;
+}
+
 /* ---- E-FEST HERO CARD ---- */
-.efest-hero-card { grid-column: 1 / -1; }
+.efest-hero-card {
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  padding: 44px 40px 40px;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
+}
+
+/* Open state: Gold gradient border + layered outer glow + subtle pulse */
+.efest-hero-card.registration-open {
+  background:
+    linear-gradient(145deg, #14141f, #181830) padding-box,
+    linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.75), rgba(251, 191, 36, 0.95)) border-box;
+  border: 1.5px solid transparent;
+  box-shadow:
+    0 0 0 1px var(--gold-glow-1),
+    0 0 24px var(--gold-glow-2),
+    0 0 60px var(--gold-glow-3);
+  animation: goldCardPulse 3s ease-in-out infinite;
+}
+
+.efest-hero-card.registration-open:hover {
+  box-shadow:
+    0 0 0 1.5px var(--gold-glow-1),
+    0 0 32px var(--gold-glow-2),
+    0 0 75px var(--gold-glow-3);
+}
+
+/* Closed state: Remove gold glow, pulse animation, and return to normal subtle border */
+.efest-hero-card.registration-closed {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  animation: none;
+}
+
+/* Subtle breathing glow keyframes */
+@keyframes goldCardPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.35),
+      0 0 24px rgba(251, 191, 36, 0.28),
+      0 0 60px rgba(251, 191, 36, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px rgba(251, 191, 36, 0.5),
+      0 0 32px rgba(251, 191, 36, 0.38),
+      0 0 75px rgba(251, 191, 36, 0.22);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .efest-hero-card.registration-open {
+    animation: none !important;
+  }
+  .btn-gold,
+  #hero-register-btn.btn-gold,
+  #efest-register-btn.btn-gold {
+    animation: none !important;
+  }
+}
+
+/* ---- GOLD STATUS BADGE ---- */
+.efest-hero-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  line-height: 1.2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  width: fit-content;
+  transition: all 0.3s ease;
+}
+
+.efest-hero-badge.badge-open {
+  background: var(--gold-badge-bg);
+  color: var(--gold-color);
+  border: 1px solid var(--gold-badge-border);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.15);
+}
+
+.efest-hero-badge.badge-closed {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+/* ---- DEDICATED GOLD BUTTON (.btn-gold) ---- */
+.btn-gold,
+.hero .btn-gold,
+.hero-actions .btn-gold,
+#hero-register-btn.btn-gold,
+#efest-register-btn.btn-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #1a1200 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.4),
+    0 0 22px rgba(251, 191, 36, 0.35),
+    0 0 50px rgba(251, 191, 36, 0.18) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease !important;
+  animation: btnGoldPulse 2.5s infinite ease-in-out !important;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+/* Ensure the arrow "→" and any nested text stays dark (#1a1200) */
+.btn-gold *,
+.hero .btn-gold *,
+.hero-actions .btn-gold *,
+#hero-register-btn.btn-gold *,
+#efest-register-btn.btn-gold * {
+  color: #1a1200 !important;
+}
+
+.btn-gold:hover,
+.hero .btn-gold:hover,
+.hero-actions .btn-gold:hover,
+#hero-register-btn.btn-gold:hover,
+#efest-register-btn.btn-gold:hover {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.08) !important;
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.6) !important;
+  color: #1a1200 !important;
+}
+
+.btn-gold:focus-visible,
+#hero-register-btn.btn-gold:focus-visible,
+#efest-register-btn.btn-gold:focus-visible {
+  outline: 2px solid #fbbf24 !important;
+  outline-offset: 3px !important;
+}
+
+@keyframes btnGoldPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.4),
+      0 0 22px rgba(251, 191, 36, 0.35),
+      0 0 50px rgba(251, 191, 36, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px rgba(251, 191, 36, 0.55),
+      0 0 30px rgba(251, 191, 36, 0.5),
+      0 0 65px rgba(251, 191, 36, 0.28);
+  }
+}
+
+/* Closed state safety overrides */
+.btn-gold.btn-disabled,
+.btn-gold:disabled,
+#hero-register-btn.btn-disabled,
+#efest-register-btn.btn-disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  animation: none !important;
+  opacity: 0.75 !important;
+  filter: none !important;
+}
 .efest-hero-inner {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -27,7 +216,29 @@
   max-width: 560px;
   margin-bottom: 28px;
 }
-.efest-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.efest-hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.efest-deadline-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+}
+
+/* Right column holding Stat counter */
+.efest-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .efest-hero-stat {
   display: flex;
   flex-direction: column;
@@ -36,13 +247,15 @@
   background: rgba(99,102,241,0.06);
   border: 1px solid rgba(99,102,241,0.15);
   border-radius: var(--radius);
-  padding: 32px 40px;
+  padding: 28px 36px;
   text-align: center;
-  flex-shrink: 0;
+  width: 100%;
+  min-width: 260px;
+  max-width: 320px;
 }
 .efest-stat-num {
   font-family: var(--font-display);
-  font-size: 4.5rem;
+  font-size: 4.2rem;
   font-weight: 800;
   color: var(--accent);
   line-height: 1;
@@ -58,17 +271,81 @@
   font-size: 0.72rem;
   color: var(--text-muted);
   opacity: 0.6;
-  max-width: 160px;
+  max-width: 220px;
   line-height: 1.5;
   margin-top: 8px;
 }
-@media (max-width: 700px) {
-  .efest-hero-inner { grid-template-columns: 1fr; }
-  .efest-hero-stat { padding: 24px 28px; flex-direction: row; gap: 20px; align-items: center; text-align: left; }
-  .efest-stat-num { font-size: 3rem; }
-  .efest-stat-sub { display: none; }
-  .efest-hero-actions .btn { width: 100%; justify-content: center; }
+
+/* Disabled button styling for closed registrations */
+.btn-disabled,
+.btn[disabled],
+.btn:disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.75;
 }
+
+
+
+/* ---- Responsive: tablet & mobile ---- */
+@media (max-width: 960px) {
+  .efest-hero-card {
+    padding: 32px 28px 28px;
+  }
+  .efest-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .efest-hero-right {
+    width: 100%;
+    align-items: center;
+  }
+  .efest-hero-stat {
+    max-width: 320px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .efest-hero-card {
+    padding: 28px 20px 24px;
+  }
+  .efest-hero-badge {
+    font-size: 0.68rem;
+    letter-spacing: 1.4px;
+    padding: 4px 10px;
+    margin-bottom: 10px;
+  }
+  .efest-hero-stat {
+    padding: 22px 26px;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+    text-align: left;
+    max-width: 320px;
+  }
+  .efest-stat-num { font-size: 2.8rem; }
+  .efest-stat-sub { display: none; }
+  .efest-hero-actions { width: 100%; align-items: stretch; }
+  .efest-hero-actions .btn { width: 100%; justify-content: center; }
+  .efest-deadline-note { text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .efest-hero-card {
+    padding: 24px 16px;
+  }
+  .efest-hero-title {
+    font-size: 2.2rem;
+  }
+}
+
+
 
 /* ---- REGISTRATION HUB PAGE ---- */
 .hub-page { min-height: calc(100vh - var(--nav-h)); padding: 100px clamp(20px,6vw,100px) 80px; background: var(--bg); }
@@ -253,3 +530,186 @@
   .reg-footer-actions { flex-direction: column-reverse; }
   .reg-footer-actions .btn { width: 100%; justify-content: center; }
 }
+
+/* ── EVENTS PAGE SPONSORS SECTION ── */
+.events-sponsors-section {
+  padding: 56px 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.events-sponsors-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.events-sponsors-label {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-bottom: 0 !important;
+}
+
+.events-sponsors-view-all {
+  color: var(--accent-light, #818cf8);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.events-sponsors-view-all:hover {
+  color: var(--text, #ffffff);
+  transform: translateX(3px);
+}
+
+.events-sponsors-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 24px;
+}
+
+.events-sponsor-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.events-sponsor-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Connexaa - FIRST and LARGER with gold/purple highlight */
+.events-sponsor-card--featured {
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(135deg, rgba(251, 191, 36, 0.7) 0%, rgba(168, 85, 247, 0.8) 50%, rgba(99, 102, 241, 0.7) 100%) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 25px rgba(168, 85, 247, 0.15);
+}
+
+.events-sponsor-card--featured:hover {
+  transform: translateY(-5px);
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(135deg, rgba(251, 191, 36, 0.95) 0%, rgba(168, 85, 247, 0.95) 50%, rgba(129, 140, 248, 0.8) 100%) border-box;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 35px rgba(168, 85, 247, 0.28);
+}
+
+.events-sponsor-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.events-sponsor-logo-wrap--dark {
+  background: transparent;
+}
+
+/* Light-grey logo cards for Centinez and Unstop */
+.events-sponsor-logo-wrap--light {
+  background: #f0f4f8;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.events-sponsor-logo-img {
+  height: 48px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.events-sponsor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.events-sponsor-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.events-sponsor-card--featured .events-sponsor-badge {
+  color: #fbbf24;
+}
+
+.events-sponsor-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.events-sponsor-tagline {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.events-sponsor-arrow {
+  margin-top: 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Responsive: 1-col on mobile/tablet, centered, no horizontal overflow */
+@media (max-width: 960px) {
+  .events-sponsors-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .events-sponsors-section {
+    padding: 36px 0;
+  }
+  .events-sponsor-card {
+    padding: 18px 16px;
+  }
+  .events-sponsor-logo-wrap {
+    height: 70px;
+  }
+  .events-sponsor-logo-img {
+    height: 42px;
+  }
+}
+

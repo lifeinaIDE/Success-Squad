@@ -19,7 +19,7 @@ export default function About() {
         <div className="two-col">
           <div className="col-text">
             <div className="section-label">Our Story</div>
-            <h2 className="section-title">Born from a <span className="accent">spark.</span></h2>
+            <h2 className="section-title">Born from a <span className="accent">spark</span></h2>
             <p style={{ color: 'var(--text-muted)', lineHeight: '1.85', marginBottom: '20px' }}>
               Success Squad was founded with one simple belief: every student has the potential to be a founder. We started
               as a small group of passionate students who wanted to do more than just attend lectures, we wanted to build
@@ -50,7 +50,7 @@ export default function About() {
       {/* VALUES */}
       <section className="section" style={{ background: 'var(--bg-2)' }}>
         <div className="section-label">Our Values</div>
-        <h2 className="section-title">What we <span className="accent">stand for.</span></h2>
+        <h2 className="section-title">What we <span className="accent">stand for</span></h2>
         <div className="values-grid">
           {valuesData.map((v) => <ValueItem key={v.id} {...v} />)}
         </div>
@@ -58,7 +58,7 @@ export default function About() {
 
       {/* CTA */}
       <section className="cta-strip">
-        <h2>Join a community of <span className="accent">builders.</span></h2>
+        <h2>Join a community of <span className="accent">builders</span></h2>
         <p>Applications are open. Take the first step toward building your vision.</p>
         <Link to="/contact" className="btn btn-primary">Apply Now</Link>
       </section>
