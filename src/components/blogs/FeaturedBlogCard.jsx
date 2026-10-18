@@ -7,7 +7,12 @@ export default function FeaturedBlogCard({ blog }) {
     <article className="featured-blog-card">
       <div className="featured-blog-content">
         <div className="featured-blog-topbar">
-          <span className="featured-pill">⭐ Featured Story</span>
+          <div className="featured-blog-pills">
+            <span className="featured-pill">⭐ Featured Story</span>
+            {blog.articleNumber && (
+              <span className="blog-article-pill">Article {blog.articleNumber}</span>
+            )}
+          </div>
           <div className="blog-card-meta">
             <span className="blog-meta-date">{date}</span>
             <span className="blog-meta-dot" aria-hidden="true">•</span>

@@ -28,7 +28,7 @@ export default function BlogPost() {
     )
   }
 
-  const { title, excerpt, readTime, date, author, tags, sections } = blog
+  const { title, subtitle, articleNumber, excerpt, readTime, date, author, tags, sections } = blog
 
   // Related articles (excluding current article)
   const relatedBlogs = blogsData
@@ -48,9 +48,9 @@ export default function BlogPost() {
     <>
       <Helmet>
         <title>{title} | Success Squad Blogs</title>
-        <meta name="description" content={excerpt} />
+        <meta name="description" content={subtitle || excerpt} />
         <meta property="og:title" content={`${title} | Success Squad`} />
-        <meta property="og:description" content={excerpt} />
+        <meta property="og:description" content={subtitle || excerpt} />
         <meta property="og:type" content="article" />
       </Helmet>
 
@@ -65,20 +65,25 @@ export default function BlogPost() {
             <span className="crumb-sep">/</span>
             <Link to="/blogs">Blogs</Link>
             <span className="crumb-sep">/</span>
-            <span className="crumb-current">Article</span>
+            <span className="crumb-current">Article {articleNumber || ''}</span>
           </div>
         </div>
 
         {/* Post Hero Header */}
         <header className="blog-post-header">
           <div className="blog-post-pills">
+            {articleNumber && (
+              <span className="blog-post-badge-pill">
+                Entrepreneurship Blog • Article {articleNumber}
+              </span>
+            )}
             <span className="blog-post-time-pill">{readTime}</span>
             <span className="blog-post-date-pill">{date}</span>
           </div>
 
           <h1 className="blog-post-title">{title}</h1>
 
-          <p className="blog-post-lead">{excerpt}</p>
+          {subtitle && <p className="blog-post-subtitle">{subtitle}</p>}
 
           {/* Author & Share Bar */}
           <div className="blog-author-strip">

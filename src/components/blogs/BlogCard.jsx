@@ -7,6 +7,12 @@ export default function BlogCard({ blog }) {
     <article className="blog-card">
       <div className="blog-card-body">
         <div className="blog-card-meta">
+          {blog.articleNumber && (
+            <>
+              <span className="blog-article-pill">Article {blog.articleNumber}</span>
+              <span className="blog-meta-dot" aria-hidden="true">•</span>
+            </>
+          )}
           <span className="blog-meta-date">{date}</span>
           <span className="blog-meta-dot" aria-hidden="true">•</span>
           <span className="blog-meta-time">{readTime}</span>
