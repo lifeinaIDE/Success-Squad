@@ -18,6 +18,7 @@ import { generateReceipt } from '../utils/generateReceipt.js'
 
 // Fetch queue items: both standard 'submitted' and CraftCode 'pending_unstop_review'
 async function listReviewQueue(eventId = null) {
+  if (!supabase) return []
   let query = supabase
     .from('pending_payments')
     .select('*')
@@ -196,21 +197,32 @@ export default function AdminDashboard() {
   const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!supabase) {
+      setUser(null)
+      setAuthError('Supabase is not configured. Please verify that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel environment variables.')
+      return
+    }
+
+    supabase.auth.getSession().then(({ data: { session } = {} }) => {
+      const u = session?.user ?? null
+      if (u && ADMIN_EMAILS.has(u.email)) setUser(u)
+      else { setUser(null); if (u) supabase.auth.signOut() }
+    }).catch((err) => {
+      console.warn('[Admin] getSession error:', err)
+      setUser(null)
+      setAuthError('Session check failed: ' + (err.message || 'Unknown error'))
+    })
+
+    const { data: { subscription } = {} } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null
       if (u && ADMIN_EMAILS.has(u.email)) setUser(u)
       else { setUser(null); if (u) supabase.auth.signOut() }
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user ?? null
-      if (u && ADMIN_EMAILS.has(u.email)) setUser(u)
-      else { setUser(null); if (u) supabase.auth.signOut() }
-    })
-    return () => subscription.unsubscribe()
+    return () => subscription?.unsubscribe?.()
   }, [])
 
   const loadData = useCallback(async () => {
-    if (!user) return
+    if (!user || !supabase) return
     setLoading(true)
     try {
       if (tab === 'queue') {
@@ -244,6 +256,10 @@ export default function AdminDashboard() {
 
   const handleLogin = async (email, password) => {
     setAuthError('')
+    if (!supabase) {
+      setAuthError('Sign-in unavailable: Supabase environment variables are not configured in Vercel.')
+      return
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) setAuthError('Invalid email or password.')
   }

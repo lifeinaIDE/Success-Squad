@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import Layout           from './components/layout/Layout.jsx'
 import Home             from './pages/Home.jsx'
@@ -46,6 +46,7 @@ export default function App() {
             <Route path="blogs/:slug"       element={<BlogPost />} />
             <Route path="contact"           element={<Contact />} />
             <Route path="privacy-policy"    element={<PrivacyPolicy />} />
+            <Route path="privacy"           element={<Navigate to="/privacy-policy" replace />} />
 
             {/* ── Hidden / unlisted routes (inside Layout for consistent chrome) ── */}
             {/* Registration hub: only reachable via the "Register Now" button     */}
@@ -54,8 +55,10 @@ export default function App() {
             {/* Status lookup: only reachable via Team ID from confirmation screen */}
             <Route path="status"            element={<StatusLookup />} />
 
-            {/* Admin dashboard: shared internally only, Firebase Auth gated       */}
+            {/* Admin dashboard: shared internally only, protected by auth         */}
             <Route path="admin"             element={<AdminDashboard />} />
+            <Route path="admin/*"           element={<AdminDashboard />} />
+            <Route path="dashboard"         element={<Navigate to="/admin" replace />} />
 
             <Route path="*"                 element={<NotFound />} />
           </Route>
