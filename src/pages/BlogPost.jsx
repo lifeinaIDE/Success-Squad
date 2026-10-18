@@ -28,12 +28,12 @@ export default function BlogPost() {
     )
   }
 
-  const { title, excerpt, category, coverImage, readTime, date, author, tags, sections } = blog
+  const { title, excerpt, readTime, date, author, tags, sections } = blog
 
-  // Related articles (same category or others, excluding current)
+  // Related articles (excluding current article)
   const relatedBlogs = blogsData
     .filter((b) => b.id !== blog.id)
-    .slice(0, 2)
+    .slice(0, 3)
 
   const handleCopyLink = () => {
     navigator.clipboard?.writeText(window.location.href)
@@ -51,7 +51,6 @@ export default function BlogPost() {
         <meta name="description" content={excerpt} />
         <meta property="og:title" content={`${title} | Success Squad`} />
         <meta property="og:description" content={excerpt} />
-        <meta property="og:image" content={coverImage} />
         <meta property="og:type" content="article" />
       </Helmet>
 
@@ -59,21 +58,20 @@ export default function BlogPost() {
         {/* Navigation Breadcrumb */}
         <div className="blog-post-nav-bar">
           <Link to="/blogs" className="blog-back-link">
-            ← Back to Articles
+            ← Back to All Articles
           </Link>
           <div className="blog-breadcrumbs">
             <Link to="/">Home</Link>
             <span className="crumb-sep">/</span>
             <Link to="/blogs">Blogs</Link>
             <span className="crumb-sep">/</span>
-            <span className="crumb-current">{category}</span>
+            <span className="crumb-current">Article</span>
           </div>
         </div>
 
         {/* Post Hero Header */}
         <header className="blog-post-header">
           <div className="blog-post-pills">
-            <span className="blog-card-badge">{category}</span>
             <span className="blog-post-time-pill">{readTime}</span>
             <span className="blog-post-date-pill">{date}</span>
           </div>
@@ -85,14 +83,9 @@ export default function BlogPost() {
           {/* Author & Share Bar */}
           <div className="blog-author-strip">
             <div className="blog-author-info">
-              <img
-                src={author.avatar}
-                alt={author.name}
-                className="blog-author-avatar large"
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
-              />
+              <div className="blog-author-monogram large" aria-hidden="true">
+                {author.initials || author.name.slice(0, 2).toUpperCase()}
+              </div>
               <div className="blog-author-text">
                 <span className="blog-author-name">{author.name}</span>
                 <span className="blog-author-role">{author.role}</span>
@@ -143,15 +136,6 @@ export default function BlogPost() {
           </div>
         </header>
 
-        {/* Full Cover Image */}
-        <div className="blog-post-hero-image-wrap">
-          <img
-            src={coverImage}
-            alt={title}
-            className="blog-post-hero-image"
-          />
-        </div>
-
         {/* Article Body Content */}
         <div className="blog-post-content-container">
           <div className="blog-post-body">
@@ -178,64 +162,42 @@ export default function BlogPost() {
                 </section>
               ))}
 
+            {/* Author Bio Box */}
+            <div className="blog-author-bio-card">
+              <div className="blog-author-monogram xlarge" aria-hidden="true">
+                {author.initials || author.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="blog-bio-text">
+                <span className="bio-written-by">Written by</span>
+                <h3 className="bio-author-name">{author.name}</h3>
+                <p className="bio-author-role">{author.role}</p>
+                <p className="bio-paragraph">{author.bio}</p>
+              </div>
+            </div>
+
             {/* Tags footer */}
             {tags && tags.length > 0 && (
               <div className="blog-post-tags-footer">
-                <span className="tags-label">Tags:</span>
-                <div className="blog-card-tags">
+                <span className="tags-label">Tagged with:</span>
+                <div className="tags-list">
                   {tags.map((t) => (
-                    <span key={t} className="blog-tag">
+                    <span key={t} className="blog-tag large">
                       #{t}
                     </span>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* Author Bio Box */}
-            <div className="blog-author-bio-card">
-              <img
-                src={author.avatar}
-                alt={author.name}
-                className="bio-avatar"
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
-              />
-              <div className="bio-content">
-                <span className="bio-label">About the Author</span>
-                <h3 className="bio-name">{author.name}</h3>
-                <p className="bio-role">{author.role}</p>
-                <p className="bio-desc">{author.bio}</p>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Next / CTA Strip */}
-        <div className="blog-post-footer-cta">
-          <div className="cta-box">
-            <h3>Turn Your Campus Project into a Reality</h3>
-            <p>
-              Join Success Squad's incubation program, pitch your ideas at E-Fest '26,
-              and connect with mentors who will help you launch.
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 18 }}>
-              <Link to="/contact" className="btn btn-primary">
-                Join Success Squad
-              </Link>
-              <Link to="/events" className="btn btn-ghost">
-                Explore E-Fest Events →
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Related Articles */}
+        {/* Related Articles Strip */}
         {relatedBlogs.length > 0 && (
-          <section className="blog-related-section">
-            <div className="section-label">Keep Reading</div>
-            <h2 className="section-title">Related <span className="accent">Articles</span></h2>
+          <section className="blog-related-section" aria-label="More Articles">
+            <div className="blog-related-header">
+              <span className="section-label">Keep Reading</span>
+              <h2>More Insights &amp; Stories</h2>
+            </div>
             <div className="blogs-grid">
               {relatedBlogs.map((b) => (
                 <BlogCard key={b.id} blog={b} />

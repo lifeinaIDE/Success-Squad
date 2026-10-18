@@ -2,14 +2,13 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
-import { blogsData, blogCategories } from '../data/blogsData.js'
+import { blogsData } from '../data/blogsData.js'
 import BlogCard from '../components/blogs/BlogCard.jsx'
 import FeaturedBlogCard from '../components/blogs/FeaturedBlogCard.jsx'
 
 export default function Blogs() {
   useDocumentTitle('Blogs & Founder Insights')
 
-  const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Identify featured article
@@ -17,23 +16,20 @@ export default function Blogs() {
     return blogsData.find((b) => b.featured) || blogsData[0]
   }, [])
 
-  // Filtered articles
+  // Filtered articles based on search query
   const filteredBlogs = useMemo(() => {
-    return blogsData.filter((b) => {
-      const matchesCategory =
-        activeCategory === 'All' || b.category.toLowerCase() === activeCategory.toLowerCase()
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return blogsData
 
-      const q = searchQuery.trim().toLowerCase()
-      const matchesSearch =
-        !q ||
+    return blogsData.filter((b) => {
+      return (
         b.title.toLowerCase().includes(q) ||
         b.excerpt.toLowerCase().includes(q) ||
         b.author.name.toLowerCase().includes(q) ||
         (b.tags && b.tags.some((t) => t.toLowerCase().includes(q)))
-
-      return matchesCategory && matchesSearch
+      )
     })
-  }, [activeCategory, searchQuery])
+  }, [searchQuery])
 
   return (
     <>
@@ -63,28 +59,14 @@ export default function Blogs() {
       </div>
 
       <div className="blogs-page-container">
-        {/* Search & Filter Bar */}
-        <div className="blogs-filter-bar">
-          <div className="blogs-category-tabs" role="tablist" aria-label="Filter blogs by category">
-            {blogCategories.map((cat) => (
-              <button
-                key={cat}
-                role="tab"
-                aria-selected={activeCategory === cat}
-                className={`blog-category-tab ${activeCategory === cat ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          <div className="blogs-search-wrap">
+        {/* Search Bar */}
+        <div className="blogs-filter-bar no-categories">
+          <div className="blogs-search-wrap full-width">
             <span className="blogs-search-icon" aria-hidden="true">🔍</span>
             <input
               type="text"
               className="blogs-search-input"
-              placeholder="Search articles, tags, authors…"
+              placeholder="Search articles, keywords, tags, authors…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search articles"
@@ -102,7 +84,7 @@ export default function Blogs() {
         </div>
 
         {/* Featured Post Spotlight (shown when not actively searching) */}
-        {!searchQuery && activeCategory === 'All' && featuredBlog && (
+        {!searchQuery && featuredBlog && (
           <section className="featured-blog-section" aria-label="Featured Story">
             <FeaturedBlogCard blog={featuredBlog} />
           </section>
@@ -113,11 +95,7 @@ export default function Blogs() {
           <div className="blogs-section-header">
             <div>
               <span className="section-label">
-                {searchQuery
-                  ? `Search Results (${filteredBlogs.length})`
-                  : activeCategory === 'All'
-                  ? 'All Articles'
-                  : activeCategory}
+                {searchQuery ? `Search Results (${filteredBlogs.length})` : 'All Articles'}
               </span>
               <h2 className="section-title" style={{ fontSize: '1.75rem', marginTop: '4px' }}>
                 {searchQuery ? `Articles matching "${searchQuery}"` : 'Latest Publications'}
@@ -132,15 +110,12 @@ export default function Blogs() {
             <div className="blogs-empty-state">
               <span className="empty-icon" aria-hidden="true">📝</span>
               <h3>No articles found</h3>
-              <p>We couldn't find any articles matching your search or category filter.</p>
+              <p>We couldn't find any articles matching your search query.</p>
               <button
                 className="btn btn-ghost"
-                onClick={() => {
-                  setActiveCategory('All')
-                  setSearchQuery('')
-                }}
+                onClick={() => setSearchQuery('')}
               >
-                Reset Filters
+                Clear Search
               </button>
             </div>
           ) : (

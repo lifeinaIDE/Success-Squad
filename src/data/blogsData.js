@@ -1,16 +1,29 @@
 /**
  * src/data/blogsData.js
  *
- * Data source for all Success Squad blogs, founder guides, and campus stories.
+ * Single source of truth for all Success Squad blogs, founder guides, and campus stories.
+ *
+ * ==============================================================================
+ * HOW TO ADD A NEW BLOG TO THE WEBSITE:
+ * ==============================================================================
+ * To add a new blog, copy the template below and paste it into the `blogsData` array.
+ * Each blog needs:
+ *   - id: Unique string identifier (e.g. 'my-new-startup-guide')
+ *   - slug: URL-friendly string used in the link (e.g. 'my-new-startup-guide')
+ *           The blog will be available at /blogs/my-new-startup-guide
+ *   - title: Compelling display title
+ *   - excerpt: 1-2 sentence summary shown on the blog cards
+ *   - featured: set to `true` for one story to highlight it at the top, `false` for others
+ *   - readTime: Estimated reading time (e.g. '5 min read')
+ *   - date: Formatted publication date (e.g. 'Oct 18, 2026')
+ *   - author: Object containing { name, role, initials, bio }
+ *   - tags: Array of topic strings (e.g. ['Startups', 'MVP'])
+ *   - sections: Array of content sections. Each section has:
+ *       - heading: Section title (H2)
+ *       - content: Array of paragraph strings
+ *       - callout: (Optional) { title: '...', text: '...' } highlight box
+ * ==============================================================================
  */
-
-export const blogCategories = [
-  'All',
-  'Entrepreneurship',
-  'Tech & Innovation',
-  'Pitching & Funding',
-  'Campus Stories',
-]
 
 export const blogsData = [
   {
@@ -18,15 +31,13 @@ export const blogsData = [
     slug: 'from-dorm-room-to-deal-flow',
     title: 'From Dorm Room to Deal Flow: How Student Founders Turn Campus Projects into Funded Startups',
     excerpt: 'Building a scalable venture while studying engineering is daunting — but campus provides the highest-leverage sandbox in the world. Here is the blueprint our incubation cell uses.',
-    category: 'Entrepreneurship',
     featured: true,
-    coverImage: '/images/blogs/student-startup-incubation.jpg',
     readTime: '6 min read',
     date: 'Oct 16, 2026',
     author: {
       name: 'Mayuresh Jagtap',
       role: 'Lead & Co-Founder, Success Squad',
-      avatar: '/images/mayuresh-jagtap.jpg',
+      initials: 'MJ',
       bio: 'Final year engineer, founder of Connexaa, and student entrepreneurship evangelist passionate about campus-led innovation.',
     },
     tags: ['Startups', 'Incubation', 'MVP', 'Student Founders'],
@@ -77,15 +88,13 @@ export const blogsData = [
     slug: 'the-24-hour-sprint-lessons-from-craftcode',
     title: 'The 24-Hour Sprint: How to Ship Production-Ready Code Under Pressure',
     excerpt: 'Hackathons are not just coding marathons; they are pressure cookers for product sense and teamwork. Here is how winning teams ideate, delegate, and deploy in 24 hours.',
-    category: 'Tech & Innovation',
     featured: false,
-    coverImage: '/images/blogs/hackathon-engineering.jpg',
     readTime: '5 min read',
     date: 'Oct 14, 2026',
     author: {
       name: 'Atharva Chechare',
       role: 'Head of Tech & Hackathons, EDC',
-      avatar: '/images/atharva-chechare.jpg',
+      initials: 'AC',
       bio: 'Full-stack architect and competitive programmer passionate about developer tooling and real-time systems.',
     },
     tags: ['Hackathons', 'CraftCode', 'Dev', 'Productivity'],
@@ -121,15 +130,13 @@ export const blogsData = [
     slug: 'mastering-the-3-minute-pitch-investor-secrets',
     title: 'The Art of the 3-Minute Pitch: What Angel Investors Actually Look For',
     excerpt: 'You have exactly 180 seconds to convince seasoned judges that your student startup deserves capital and mentorship. Here is how to make every single second count.',
-    category: 'Pitching & Funding',
     featured: false,
-    coverImage: '/images/blogs/pitch-presentation-summit.jpg',
     readTime: '4 min read',
     date: 'Oct 11, 2026',
     author: {
       name: 'Kunal Singh Rajput',
       role: 'Head of Strategic Partnerships, EDC',
-      avatar: '/images/kunal-singh-rajput.jpg',
+      initials: 'KR',
       bio: 'Fintech enthusiast and strategic lead connecting student ventures with venture capitalists and corporate angel networks.',
     },
     tags: ['Pitching', 'Venture Capital', 'Angel Investors', 'Presentation'],
@@ -165,15 +172,13 @@ export const blogsData = [
     slug: 'building-connexaa-student-led-digital-campus-platform',
     title: 'Building Connexaa: The Journey of a Student-Led Digital Campus Platform',
     excerpt: 'How a student initiative born out of TSSM & JSPM NTC grew into a campus-wide platform connecting thousands of students with resources, events, and opportunities.',
-    category: 'Campus Stories',
     featured: false,
-    coverImage: '/images/success-squad-team.jpg',
     readTime: '5 min read',
     date: 'Oct 08, 2026',
     author: {
       name: 'Mayuresh Jagtap',
       role: 'Founder, Connexaa',
-      avatar: '/images/mayuresh-jagtap.jpg',
+      initials: 'MJ',
       bio: 'Product architect passionate about decentralizing opportunity and building campus ecosystems.',
     },
     tags: ['Case Study', 'Connexaa', 'Student Venture', 'Success Stories'],
