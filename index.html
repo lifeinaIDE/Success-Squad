@@ -33,12 +33,18 @@
           '<button onclick=\"window.location.reload()\" style=\"margin-top:20px;padding:10px 24px;background:#6366f1;color:#fff;border:none;border-radius:50px;font-weight:600;cursor:pointer;\">Reload Application</button>';
       }
 
+      window.addEventListener('DOMContentLoaded', function() {
+        fetch('/__client_log?event=DOMContentLoaded&url=' + encodeURIComponent(window.location.href));
+      });
+
       window.addEventListener('error', function(e) {
+        fetch('/__client_log?event=window_error&msg=' + encodeURIComponent(e.message) + '&src=' + encodeURIComponent(e.filename + ':' + e.lineno));
         showFatalError('Startup Error Detected', e.message, e.error && e.error.stack ? e.error.stack : (e.filename + ':' + e.lineno));
       });
 
       window.addEventListener('unhandledrejection', function(e) {
         var r = e.reason;
+        fetch('/__client_log?event=unhandled_rejection&msg=' + encodeURIComponent(r && r.message ? r.message : String(r)));
         showFatalError('Unhandled Promise Exception', r && r.message ? r.message : String(r), r && r.stack ? r.stack : '');
       });
     </script>

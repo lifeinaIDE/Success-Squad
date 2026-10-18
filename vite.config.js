@@ -3,7 +3,23 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'client-logger',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url && req.url.startsWith('/__client_log')) {
+            console.log('[CLIENT TELEMETRY]', req.url);
+            res.writeHead(200, { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' });
+            res.end('ok');
+            return;
+          }
+          next();
+        });
+      }
+    }
+  ],
   base: process.env.VITE_BASE_PATH || '/',
   optimizeDeps: {
     include: [
