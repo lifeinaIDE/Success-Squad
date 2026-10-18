@@ -27,3 +27,7 @@ export function isRegistrationClosed(targetMs = REGISTRATION_DEADLINE_MS) {
   return Date.now() >= targetMs
 }
 
+export default function FlipCountdown() {
+  return null
+}
+

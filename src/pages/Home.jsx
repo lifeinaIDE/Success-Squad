@@ -143,10 +143,10 @@ export default function Home() {
 
         <div className="hero-stats">
           {statsData.map(({ id, target, label }, i) => (
-            <>
-              {i > 0 && <div key={`div-${id}`} className="stat-divider" />}
-              <StatItem key={id} target={target} label={label} />
-            </>
+            <div key={id} style={{ display: 'contents' }}>
+              {i > 0 && <div className="stat-divider" />}
+              <StatItem target={target} label={label} />
+            </div>
           ))}
         </div>
       </section>
