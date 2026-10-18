@@ -19,4 +19,8 @@ export default defineConfig({
       '@supabase/supabase-js'
     ],
   },
+  server: {
+    port: 5174,
+    host: true,
+  },
 })

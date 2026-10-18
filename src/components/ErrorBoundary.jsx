@@ -27,19 +27,36 @@ export default class ErrorBoundary extends Component {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--bg)',
-          color: 'var(--text)',
-          fontFamily: 'var(--font-body)',
+          background: '#0a0a0f',
+          color: '#ffffff',
+          fontFamily: "'Inter', sans-serif",
           padding: '40px',
           textAlign: 'center',
           gap: '16px',
         }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent)' }}>
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '2.5rem', fontWeight: 800, color: '#6366f1' }}>
             Something went wrong
           </h1>
-          <p style={{ color: 'var(--text-muted)', maxWidth: '480px', lineHeight: 1.7, marginBottom: '24px' }}>
+          <p style={{ color: 'rgba(255, 255, 255, 0.7)', maxWidth: '480px', lineHeight: 1.7, marginBottom: '12px' }}>
             Please refresh the page or try again in a few minutes.
           </p>
+          {this.state.message && (
+            <pre style={{
+              background: '#14141f',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#f87171',
+              padding: '12px 18px',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              maxWidth: '650px',
+              overflowX: 'auto',
+              marginBottom: '20px',
+              textAlign: 'left',
+              fontFamily: 'monospace'
+            }}>
+              {this.state.message}
+            </pre>
+          )}
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={() => window.location.reload()}
