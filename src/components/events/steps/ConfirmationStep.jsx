@@ -10,11 +10,38 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getPendingPaymentByOrderId } from '../../../services/registrations.js'
+import { generateReceipt } from '../../../utils/generateReceipt.js'
 
 export default function ConfirmationStep({ config, formData, paymentResult, onClose }) {
   // paymentResult = { orderId } - passed from PaymentStep via onSubmit
   const [order, setOrder] = useState(null)
   const [error, setError] = useState('')
+  const [downloading, setDownloading] = useState(false)
+  const [dlError, setDlError] = useState('')
+
+  const handleDownloadReceipt = async () => {
+    if (!order) return
+    setDownloading(true)
+    setDlError('')
+    try {
+      await generateReceipt({
+        order_id: order.order_id,
+        team_id: order.team_id,
+        event_id: order.event_id || config?.id,
+        amount_inr: order.amount_inr,
+        utr: order.utr,
+        team_data: order.team_data || formData,
+        created_at: order.created_at,
+        status: order.status || 'submitted',
+        registrationType: config?.registrationType,
+      })
+    } catch (err) {
+      console.error(err)
+      setDlError('Failed to generate receipt. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => {
     if (!paymentResult?.orderId) return
@@ -121,10 +148,40 @@ export default function ConfirmationStep({ config, formData, paymentResult, onCl
         ))}
       </div>
 
-      <div style={{ marginTop: 24, width: '100%' }}>
+      {/* Download Receipt Action */}
+      <div style={{ marginTop: 20, width: '100%' }}>
+        <button
+          className="btn btn-primary"
+          id="download-receipt-btn"
+          onClick={handleDownloadReceipt}
+          disabled={downloading}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '13px 20px',
+            fontSize: '0.98rem',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            border: 'none',
+            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+            cursor: downloading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {downloading ? (
+            <><span className="reg-spinner" aria-hidden="true" style={{ width: 18, height: 18 }} /> Generating Receipt (PDF)…</>
+          ) : (
+            <>⬇ Download Receipt (PDF)</>
+          )}
+        </button>
+        {dlError && <p className="reg-error" style={{ marginTop: 8, fontSize: '0.85rem' }}>{dlError}</p>}
+      </div>
+
+      <div style={{ marginTop: 18, width: '100%' }}>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10, textAlign: 'center' }}>
-          Check your registration status later to get your official <strong>Team ID</strong> and
-          downloadable receipt once verified.
+          You can also check your registration status anytime using your Order ID.
         </p>
       </div>
 

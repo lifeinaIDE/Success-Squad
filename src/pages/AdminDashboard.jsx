@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../services/supabase.js'
 import { listRegistrations, verifyPayment, rejectPayment } from '../services/registrations.js'
 import { efestEvents } from '../data/eventConfigs.js'
+import { generateReceipt } from '../utils/generateReceipt.js'
 
 // Fetch queue items: both standard 'submitted' and CraftCode 'pending_unstop_review'
 async function listReviewQueue(eventId = null) {
@@ -392,26 +393,43 @@ export default function AdminDashboard() {
                         : <span style={{ color: '#EF4444' }}>No</span>}
                     </td>
                     <td>
-                      <button 
-                        className="btn btn-ghost"
-                        style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-                        onClick={async (e) => {
-                          e.stopPropagation()
-                          if (!confirm(`Regenerate receipt for ${r.team_id}?`)) return
-                          try {
-                            const res = await supabase.functions.invoke('generate-receipt', {
-                              body: { registration_id: r.id, force: true }
-                            })
-                            if (res.error) throw new Error(res.error.message || 'Unknown error')
-                            alert('Receipt regenerated successfully')
-                            loadData()
-                          } catch (err) {
-                            alert('Failed to regenerate: ' + err.message)
-                          }
-                        }}
-                      >
-                        Regenerate
-                      </button>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <button 
+                          className="btn btn-primary"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', background: '#10b981', border: 'none' }}
+                          title="Download Receipt (PDF)"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            try {
+                              await generateReceipt(r)
+                            } catch (err) {
+                              alert('Failed to generate receipt: ' + err.message)
+                            }
+                          }}
+                        >
+                          ⬇ Receipt
+                        </button>
+                        <button 
+                          className="btn btn-ghost"
+                          style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            if (!confirm(`Regenerate receipt for ${r.team_id}?`)) return
+                            try {
+                              const res = await supabase.functions.invoke('generate-receipt', {
+                                body: { registration_id: r.id, force: true }
+                              })
+                              if (res.error) throw new Error(res.error.message || 'Unknown error')
+                              alert('Receipt regenerated successfully')
+                              loadData()
+                            } catch (err) {
+                              alert('Failed to regenerate: ' + err.message)
+                            }
+                          }}
+                        >
+                          Regenerate
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

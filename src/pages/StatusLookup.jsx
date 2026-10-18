@@ -1,60 +1,93 @@
 /**
  * StatusLookup.jsx - Public (but unlisted/noindex) status check page.
  *
- * Registrants enter their Team ID to check:
- *   - "Pending"  → waiting for admin verification
- *   - "Verified" → confirmed + "Download Receipt" button (active only when verified)
- *
- * This page is:
- *   - NOT linked from any nav, footer, or internal Link
- *   - Tagged noindex,nofollow
- *   - Reachable only by direct URL or from the ConfirmationStep link
- *
- * Receipt download is gated: button is hidden until status === 'confirmed'.
- * Uses generateReceipt.js (html2canvas + jsPDF, client-side, no server needed).
+ * Registrants enter their Team ID or Order ID to check:
+ *   - "Pending"  → waiting for admin verification (with downloadable acknowledgement receipt)
+ *   - "Verified" → confirmed + downloadable official receipt
  */
 
 import { useState } from 'react'
 import { Helmet }   from 'react-helmet-async'
-import { getRegistrationByTeamId } from '../services/registrations.js'
-import ReceiptGate from '../components/ui/ReceiptGate.jsx'
-import { useReceiptDownload } from '../hooks/useReceiptDownload.js'
+import {
+  getRegistrationByTeamId,
+  getRegistrationByOrderId,
+  getPendingPaymentByOrderId,
+} from '../services/registrations.js'
+import { generateReceipt } from '../utils/generateReceipt.js'
 
 function ReceiptCard({ reg, onDownloadComplete }) {
-  const { downloadReceipt, downloading, error } = useReceiptDownload()
+  const [downloading, setDownloading] = useState(false)
+  const [error, setError] = useState('')
   const isVerified = reg.status === 'confirmed' || reg.status === 'verified'
-  const [downloadVal, setDownloadVal] = useState('')
 
   const handleDownload = async () => {
-    if (!downloadVal) return
-    const success = await downloadReceipt(reg.team_id, downloadVal)
-    if (success && onDownloadComplete) {
-      onDownloadComplete()
+    setDownloading(true)
+    setError('')
+    try {
+      await generateReceipt({
+        team_id:     reg.team_id || reg.order_id,
+        order_id:    reg.order_id || reg.team_id,
+        event_id:    reg.event_id,
+        team_data:   reg.team_data,
+        amount_inr:  reg.amount_inr,
+        utr:         reg.utr,
+        verified_at: reg.verified_at,
+        created_at:  reg.created_at,
+        status:      reg.status,
+      })
+      if (onDownloadComplete) onDownloadComplete()
+    } catch (err) {
+      console.error(err)
+      setError('Failed to generate receipt PDF. Please try again.')
+    } finally {
+      setDownloading(false)
     }
   }
 
-  // If verified but not downloaded, show the Gate
-  if (isVerified && !reg.receipt_downloaded_at) {
-    return <ReceiptGate registration={reg} onDownloaded={onDownloadComplete} />
-  }
+  const isIndividual = reg.event_id === 'money-makers'
+  const displayName = isIndividual
+    ? (reg.team_data?.leaderName ?? reg.team_data?.name ?? '-')
+    : (reg.team_data?.teamName ?? '-')
 
   return (
     <div className="receipt-wrap" id="printable-receipt">
       <div className="receipt-card">
         <div className="receipt-header">
           <span className="section-label">E-Fest '26 · Success Squad</span>
-          <h2 className="receipt-title">Registration Confirmed</h2>
+          <h2 className="receipt-title">
+            {isVerified ? 'Registration Confirmed' : 'Registration Submitted'}
+          </h2>
         </div>
 
         <div className="receipt-grid">
-          <div className="receipt-row"><span>Team ID</span><strong>{reg.team_id}</strong></div>
-          <div className="receipt-row"><span>Team Name</span><strong>{reg.team_data?.teamName ?? '-'}</strong></div>
-          <div className="receipt-row"><span>Leader</span><strong>{reg.team_data?.leaderName ?? '-'}</strong></div>
-          <div className="receipt-row"><span>Event</span><strong>{reg.event_id}</strong></div>
+          <div className="receipt-row">
+            <span>{isVerified ? 'Team ID' : 'Order ID'}</span>
+            <strong style={{ color: 'var(--accent, #6366f1)' }}>{reg.team_id || reg.order_id}</strong>
+          </div>
+          <div className="receipt-row">
+            <span>{isIndividual ? 'Participant Name' : 'Team Name'}</span>
+            <strong>{displayName}</strong>
+          </div>
+          <div className="receipt-row">
+            <span>{isIndividual ? 'Contact Person' : 'Team Leader'}</span>
+            <strong>{reg.team_data?.leaderName ?? reg.team_data?.name ?? '-'}</strong>
+          </div>
+          <div className="receipt-row">
+            <span>Event</span>
+            <strong>{reg.event_id}</strong>
+          </div>
           <div className="receipt-row">
             <span>Status</span>
-            <strong className={`status-badge status-${reg.status}`}>{reg.status}</strong>
+            <strong className={`status-badge status-${reg.status}`}>
+              {isVerified ? 'Verified ✓' : 'Pending Verification ⏳'}
+            </strong>
           </div>
+          {reg.amount_inr && (
+            <div className="receipt-row">
+              <span>Amount Paid</span>
+              <strong>₹{reg.amount_inr}</strong>
+            </div>
+          )}
           {reg.verified_at && (
             <div className="receipt-row">
               <span>Verified On</span>
@@ -71,68 +104,78 @@ function ReceiptCard({ reg, onDownloadComplete }) {
           </div>
         </div>
 
-        {/* Download Receipt, visible and active ONLY once verified and already downloaded once */}
-        {isVerified ? (
-          <div style={{ marginTop: 24, padding: '16px', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-            <p style={{ fontSize: '0.88rem', marginBottom: '12px' }}>Download your official receipt PDF again:</p>
-            <input 
-              type="text" 
-              placeholder="Leader Email or Phone (last 4)" 
-              value={downloadVal}
-              onChange={(e) => setDownloadVal(e.target.value)}
-              style={{ width: '100%', marginBottom: '12px', padding: '8px' }}
-              disabled={downloading}
-            />
-            <button
-              className="btn btn-primary"
-              onClick={handleDownload}
-              disabled={downloading || !downloadVal}
-              id="download-receipt-btn"
-              style={{ width: '100%' }}
-            >
-              {downloading ? 'Downloading…' : '⬇ Download Receipt (PDF)'}
-            </button>
-            {error && <p className="reg-error" style={{ marginTop: 8 }}>{error}</p>}
-          </div>
-        ) : (
-          <div style={{ marginTop: 24 }}>
-            <button
-              className="btn btn-ghost"
-              disabled
-              id="download-receipt-btn-locked"
-              style={{ width: '100%', opacity: 0.45, cursor: 'not-allowed' }}
-              aria-label="Receipt download unavailable until payment is verified"
-            >
-              🔒 Receipt Available After Verification
-            </button>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
-              Your payment is being reviewed. Come back once verified.
-            </p>
-          </div>
-        )}
+        {/* Download Receipt Button */}
+        <div style={{ marginTop: 24 }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleDownload}
+            disabled={downloading}
+            id="download-receipt-btn"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '14px 20px',
+              fontWeight: 700,
+              fontSize: '1rem',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+            }}
+          >
+            {downloading ? (
+              <><span className="reg-spinner" aria-hidden="true" style={{ width: 18, height: 18 }} /> Generating Receipt PDF…</>
+            ) : (
+              <>⬇ Download Receipt (PDF)</>
+            )}
+          </button>
+          {error && <p className="reg-error" style={{ marginTop: 8 }}>{error}</p>}
+        </div>
       </div>
     </div>
   )
 }
 
 export default function StatusLookup() {
-  const [teamId, setTeamId]   = useState('')
-  const [result, setResult]   = useState(null)   // registration doc or null
+  const [query, setQuery]     = useState('')
+  const [result, setResult]   = useState(null)   // registration/order doc or null
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const [searched, setSearched] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const id = teamId.trim().toUpperCase()
-    if (!id) return
+    const raw = query.trim()
+    if (!raw) return
     setError('')
     setResult(null)
     setSearched(false)
     setLoading(true)
 
     try {
-      const doc = await getRegistrationByTeamId(id)
+      const upper = raw.toUpperCase()
+      // 1. Try team_id lookup in verified registrations
+      let doc = await getRegistrationByTeamId(upper)
+
+      // 2. If not found, try order_id lookup in registrations
+      if (!doc) {
+        doc = await getRegistrationByOrderId(raw)
+      }
+
+      // 3. If still not found, try order_id lookup in pending_payments
+      if (!doc) {
+        const pending = await getPendingPaymentByOrderId(raw)
+        if (pending) {
+          doc = {
+            ...pending,
+            team_id: pending.order_id,
+            isPending: true,
+          }
+        }
+      }
+
       setResult(doc)
       setSearched(true)
     } catch {
@@ -153,25 +196,25 @@ export default function StatusLookup() {
         <div className="hub-header">
           <div className="section-label">E-Fest '26</div>
           <h1 className="hub-title">Check <span className="accent">Status</span></h1>
-          <p className="hub-sub">Enter your Team ID to view your registration status and receipt.</p>
+          <p className="hub-sub">Enter your Team ID or Order ID to view your registration status and download receipt.</p>
         </div>
 
         <div className="status-lookup-form-wrap">
           <form className="status-lookup-form" onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="lookup-teamid">Team ID</label>
+              <label htmlFor="lookup-teamid">Team ID or Order ID</label>
               <input
                 id="lookup-teamid"
                 type="text"
-                placeholder="e.g. BGMI-00001 or CRAFT-00001"
-                value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
+                placeholder="e.g. BGMI-00001 or SS-1791873"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
-                style={{ textTransform: 'uppercase', letterSpacing: 1 }}
+                style={{ letterSpacing: 1 }}
               />
             </div>
-            <button type="submit" className="btn btn-primary" disabled={loading || !teamId.trim()}>
+            <button type="submit" className="btn btn-primary" disabled={loading || !query.trim()}>
               {loading ? 'Looking up…' : 'Check Status →'}
             </button>
           </form>
@@ -180,32 +223,21 @@ export default function StatusLookup() {
 
           {searched && !result && !error && (
             <div className="status-not-found">
-              <p>No registration found for <strong>{teamId.trim().toUpperCase()}</strong>.</p>
+              <p>No registration found for <strong>{query.trim()}</strong>.</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: 8 }}>
-                Double-check your Team ID, it was shown on your confirmation screen (e.g. BGMI-00001, CRAFT-00001).
+                Double-check your ID, it was shown on your confirmation screen (e.g. BGMI-00001, CRAFT-00001, or your Order ID).
               </p>
             </div>
           )}
 
           {result && (
             <div className="status-result" aria-live="polite">
-              {result.status === 'pending' || result.status === 'submitted' ? (
-                <div className="status-pending-box">
-                  <span className="status-badge status-pending" style={{ fontSize: '1rem' }}>Pending Verification</span>
-                  <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>
-                    Your registration for <strong>{result.team_data?.teamName ?? result.team_id}</strong> ({result.event_id}) is received.
-                    Our team will verify your payment shortly. Check back here for your Team ID.
-                  </p>
-                </div>
-              ) : (
-                <ReceiptCard 
-                  reg={result} 
-                  onDownloadComplete={() => {
-                    // Update local state to hide the gate
-                    setResult({ ...result, receipt_downloaded_at: new Date().toISOString() })
-                  }} 
-                />
-              )}
+              <ReceiptCard 
+                reg={result} 
+                onDownloadComplete={() => {
+                  setResult({ ...result, receipt_downloaded_at: new Date().toISOString() })
+                }} 
+              />
             </div>
           )}
         </div>
