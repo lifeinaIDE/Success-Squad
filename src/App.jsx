@@ -8,6 +8,8 @@ import Events           from './pages/Events.jsx'
 import Gallery          from './pages/Gallery.jsx'
 import Sponsors         from './pages/Sponsors.jsx'
 import Startups         from './pages/Startups.jsx'
+import Blogs            from './pages/Blogs.jsx'
+import BlogPost         from './pages/BlogPost.jsx'
 import Contact          from './pages/Contact.jsx'
 import PrivacyPolicy    from './pages/PrivacyPolicy.jsx'
 import NotFound         from './pages/NotFound.jsx'
@@ -40,6 +42,8 @@ export default function App() {
             <Route path="gallery"           element={<Gallery />} />
             <Route path="sponsors"          element={<Sponsors />} />
             <Route path="startups"          element={<Startups />} />
+            <Route path="blogs"             element={<Blogs />} />
+            <Route path="blogs/:slug"       element={<BlogPost />} />
             <Route path="contact"           element={<Contact />} />
             <Route path="privacy-policy"    element={<PrivacyPolicy />} />
 
